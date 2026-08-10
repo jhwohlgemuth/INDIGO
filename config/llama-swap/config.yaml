@@ -1,0 +1,21 @@
+healthCheckTimeout: 500
+proxy:
+  listen: "http://0.0.0.0:10732"
+macros:
+  "context_size": "${env.LLAMA_ARG_CTX_SIZE}"
+  "parallel": "${env.LLAMA_ARG_N_PARALLEL}"
+  "models_dir": "${env.MODEL_DIRECTORY}"
+models:
+  "gpt-oss-20b":
+    proxy: "http://127.0.0.1:${PORT}"
+    cmd: |
+      llama-server
+      --offline
+      --batch-size 2048
+      --host 0.0.0.0
+      --jinja
+      --model ${models_dir}/gpt-oss-20b
+      --port ${PORT}
+      --sleep-idle-seconds 600
+      --tools all
+      --ubatch-size 2048

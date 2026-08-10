@@ -1,0 +1,28 @@
+name: Container
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shell validation tools
+        run: sudo apt-get update && sudo apt-get install --yes shellcheck
+      - name: Install shfmt
+        run: |
+          curl --fail --location --output /tmp/shfmt \
+            https://github.com/mvdan/sh/releases/download/v3.11.0/shfmt_v3.11.0_linux_amd64
+          sudo install /tmp/shfmt /usr/local/bin/shfmt
+      - name: Check shell scripts
+        run: make check
+      - name: Build image
+        run: make build
