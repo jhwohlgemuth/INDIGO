@@ -8,4 +8,5 @@ port="${LLAMA_ARG_PORT:-10732}"
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 exec llama-swap \
 	--config "${HOME}/.config/llama-swap/config.yaml" \
-	--listen "${host}:${port}"
+	--listen "${host}:${port}" \
+	--watch-config

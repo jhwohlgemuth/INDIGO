@@ -4,8 +4,8 @@
 
 Goldsmith is a containerized development environment for running local models,
 coding agents, and agentic software workflows. It combines the browser-based
-development services inherited from Gold Notebook with a local, OpenAI-compatible
-inference endpoint managed by llama-swap.
+development services inherited from [Gold Notebook](https://github.com/jhwohlgemuth/gold) with a local, OpenAI-compatible
+inference endpoint managed by [llama-swap](https://github.com/mostlygeek/llama-swap).
 
 ## Quick start
 
@@ -24,12 +24,12 @@ docker run --rm -it \
     --hostname goldsmith \
     --publish 10732:10732 \
     --publish 1337:1337 \
-    --volume goldsmith-models:/home/nonroot/.models \
+    --volume ~/.models:/home/nonroot/.models \
     ghcr.io/jhwohlgemuth/goldsmith:0.1.0
 ```
 
 The inference router is available at `http://localhost:10732`. The inherited
-code-server interface is available at `https://localhost:1337`.
+[code-server](https://github.com/coder/code-server) interface is available at `https://localhost:1337`.
 
 Goldsmith expects model directories beneath `/home/nonroot/.models`. Model
 acquisition and generated llama-swap configuration belong to Acorn; this
@@ -51,6 +51,6 @@ for the dependency contract and future decoupling plan.
 
 ## Relationship to Gold
 
-Goldsmith originated as Gold's agentic environment and now evolves as an
+Goldsmith originated as Gold's agentic environment and is now maintained as an
 independent product. Gold focuses on provably correct software; Goldsmith
-focuses on equipping local AI agents to help build software.
+focuses on equipping local AI agents to help build software — both can be used together for much win.
