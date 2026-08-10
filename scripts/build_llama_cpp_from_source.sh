@@ -33,4 +33,3 @@ main() {
     rm -rf "${SRC_DIRECTORY}"
 }
 main "$@"
-
