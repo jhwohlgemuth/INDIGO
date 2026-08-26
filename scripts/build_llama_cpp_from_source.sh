@@ -25,6 +25,7 @@ main() {
         -DCMAKE_CUDA_COMPILER="${NVCC_BIN}" \
         "${CMAKE_ARGS_ARRAY[@]}" \
         -DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined \
+        -DCMAKE_BUILD_TYPE=Release \
         .
     cmake --build build --config Release -j"$(nproc)"
     popd > /dev/null || exit
