@@ -11,4 +11,5 @@ ignored:
   - SC2086
 
 trustedRegistries:
+  - docker.io
   - ghcr.io

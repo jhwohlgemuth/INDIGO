@@ -1,0 +1,11 @@
+# Installed as ~/.codex/config.toml only when that file does not exist.
+# OpenCode is Indigo's primary local-model client; Codex shares its MCPs.
+
+[mcp_servers.filesystem]
+url = "http://127.0.0.1:11002/mcp"
+
+[mcp_servers.rust_analyzer]
+url = "http://127.0.0.1:11003/mcp"
+
+[mcp_servers.openviking]
+url = "http://127.0.0.1:1933/mcp"

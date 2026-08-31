@@ -1,0 +1,14 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+set -euo pipefail
+
+workspace="${RUST_ANALYZER_WORKSPACE:-${HOME}/dev}"
+port="${MCP_RUST_ANALYZER_PORT:-11003}"
+
+install -d -m 0755 "${workspace}"
+
+exec /opt/mcp/node/bin/supergateway \
+	--stdio "/usr/local/bin/rust-analyzer-mcp ${workspace}" \
+	--outputTransport streamableHttp \
+	--port "${port}" \
+	--healthEndpoint /healthz

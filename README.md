@@ -1,56 +1,208 @@
-# Goldsmith
+# Indigo — Isolated Native Development Instance for Generative Operations
 
-> A local workshop for agentic software development.
+> A local workshop for agentic software development — local-first, agents-first. Indigo = **I**solated **N**ative **D**evelopment **I**nstance for **G**enerative **O**perations.
 
-Goldsmith is a containerized development environment for running local models,
-coding agents, and agentic software workflows. It combines the browser-based
-development services inherited from [Gold Notebook](https://github.com/jhwohlgemuth/gold) with a local, OpenAI-compatible
-inference endpoint managed by [llama-swap](https://github.com/mostlygeek/llama-swap).
+Indigo is a GPU-enabled environment for local models, coding agents, formal
+verification, and research. OpenCode is the primary client and is preconfigured
+for Indigo's OpenAI-compatible `llama-swap` endpoint. Codex remains supported
+through a generated MCP configuration.
+
+The Indigo container runs persistent OpenViking, Pinokio, Filesystem MCP,
+and Rust Analyzer MCP processes under s6 alongside inference.
+
+| Service | Purpose | Host endpoint |
+| --- | --- | --- |
+| Indigo inference | Local OpenAI-compatible models | `http://127.0.0.1:10732/v1` |
+| OpenViking | Context database, Studio, and MCP | `http://127.0.0.1:1933` |
+| Pinokio | Management interface | `http://127.0.0.1:42000` |
+| Pinokio proxy | Stable ingress for dynamic web apps | `http://127.0.0.1:42080` |
+| Filesystem MCP | Workspace-scoped file operations | `http://127.0.0.1:11002/mcp` |
+| Rust Analyzer MCP | Workspace diagnostics, navigation, and refactoring | `http://127.0.0.1:11003/mcp` |
+
+> Lean formal verification has moved to [`jhwohlgemuth/gold`](https://github.com/jhwohlgemuth/gold) as a standalone `mcp-lean` service (`--profile formal`).
+
+All published ports bind to `127.0.0.1` by default. Every host port and the
+bind address are configurable with Compose environment variables.
 
 ## Quick start
 
-Build the image:
+Build and start the default stack:
 
 ```shell
-make build
+docker compose up --build --detach
+docker compose ps
 ```
 
-Create a persistent model directory and start Goldsmith with NVIDIA GPU access:
+To create only the main Indigo container without Compose, including host
+access to OpenViking, the Pinokio management UI, and Pinokio's stable app proxy,
+use host bind mounts appropriate for your shell.
+
+Windows PowerShell:
+
+```powershell
+docker run --detach --gpus all --name indigo --hostname indigo --restart unless-stopped --shm-size 2g --publish 10732:10732 --publish 127.0.0.1:1337:1337 --publish 1933:1933 --publish 42000:42000 --publish 42080:8080 --publish 11002:11002 --publish 11003:11003 --volume "${HOME}\dev:/home/nonroot/dev" --volume "${HOME}\.models:/home/nonroot/.models" --volume "${HOME}\.openviking:/home/nonroot/.openviking" --volume "${HOME}\.pinokio:/home/nonroot/.pinokio" ghcr.io/jhwohlgemuth/indigo:0.1.4
+```
+
+Linux or macOS:
 
 ```shell
-docker run --rm -it \
-    --gpus all \
-    --name goldsmith \
-    --hostname goldsmith \
-    --publish 10732:10732 \
-    --publish 1337:1337 \
-    --volume ~/.models:/home/nonroot/.models \
-    ghcr.io/jhwohlgemuth/goldsmith:0.1.0
+docker run --detach --gpus all --name indigo --hostname indigo --restart unless-stopped --shm-size 2g --publish 10732:10732 --publish 127.0.0.1:1337:1337 --publish 1933:1933 --publish 42000:42000 --publish 42080:8080 --publish 11002:11002 --publish 11003:11003 --volume "$HOME/dev:/home/nonroot/dev" --volume "$HOME/.models:/home/nonroot/.models" --volume "$HOME/.openviking:/home/nonroot/.openviking" --volume "$HOME/.pinokio:/home/nonroot/.pinokio" ghcr.io/jhwohlgemuth/indigo:0.1.4
 ```
 
-The inference router is available at `http://localhost:10732`. The inherited
-[code-server](https://github.com/coder/code-server) interface is available at `https://localhost:1337`.
+Create any missing host directories before running the command. These paths
+keep the workspace, models, OpenViking state, and Pinokio installations directly
+accessible from the host rather than in Docker-managed volumes.
 
-Goldsmith expects model directories beneath `/home/nonroot/.models`. Model
-acquisition and generated llama-swap configuration belong to Acorn; this
-repository owns the container runtime, service supervision, and health contract.
+This exposes OpenViking at `http://127.0.0.1:1933`, Pinokio at
+`http://127.0.0.1:42000`, proxied Pinokio applications through port `42080`,
+Filesystem MCP on `11002`, and Rust Analyzer MCP on `11003`.
 
-## Runtime contract
+Equivalent Make shortcuts are available for routine stack operations:
 
-| Interface | Default |
-| --- | --- |
-| Inference API | `http://localhost:10732` |
-| Health endpoint | `http://localhost:10732/health` |
-| Model storage | `/home/nonroot/.models` |
-| Context size | `LLAMA_ARG_CTX_SIZE=0` |
-| Parallel slots | `LLAMA_ARG_N_PARALLEL=2` |
+```shell
+make compose-build
+make up
+make ps
+make logs
+make restart
+make down
+```
 
-Goldsmith currently builds on the explicitly versioned
-`ghcr.io/jhwohlgemuth/notebook:1.0.4` image. See [ARCHITECTURE.md](ARCHITECTURE.md)
-for the dependency contract and future decoupling plan.
+Each MCP server also has a one-word target:
 
-## Relationship to Gold
+```shell
+make filesystem
+make rust
+```
 
-Goldsmith originated as Gold's agentic environment and is now maintained as an
-independent product. Gold focuses on provably correct software; Goldsmith
-focuses on equipping local AI agents to help build software — both can be used together for much win.
+The `filesystem` and `rust` targets build and start Indigo because both MCPs
+are s6 services in that container.
+
+`COMPOSE` and `COMPOSE_ARGS` are overridable.
+
+Before submitting changes, normalize text files, format shell scripts, and run
+the repository checks with:
+
+```shell
+make prepare
+```
+
+`prepare` runs `make format` first; the format target uses `dos2unix` for shell,
+ShellCheck, Compose, workflow, and configuration YAML files, then applies
+`shfmt` to shell scripts.
+
+OpenViking waits for a valid configuration on first use. Initialize it,
+validate the selected local or remote embedding/VLM providers, and restart:
+
+```shell
+docker compose exec indigo openviking-server init
+docker compose exec indigo openviking-server doctor
+```
+
+For a local provider, the inference endpoint visible from OpenViking is
+`http://127.0.0.1:10732/v1`. The chosen model must provide the capability
+OpenViking requests; the default coding model is not assumed to be an embedding
+or vision model.
+
+The container healthcheck covers inference, the notebook services, Filesystem
+MCP, Rust Analyzer MCP, OpenViking, the Pinokio management UI, and Pinokio's
+Caddy ingress. Before OpenViking has an `ov.conf`, its health result is reported
+as `WAIT` and does not make the container unhealthy. Once the file exists,
+`http://127.0.0.1:1933/health` must succeed. The remaining checks are required.
+
+OpenCode inside Indigo receives a default config only if
+`~/.config/opencode/opencode.json` does not exist. Codex follows the same rule
+for `~/.codex/config.toml`.
+
+## Host configuration
+
+Host setup is deliberately external to the container. The planned workflow is:
+
+1. Use
+   [`jhwohlgemuth/my-shell-setup`](https://github.com/jhwohlgemuth/my-shell-setup)
+   to install and maintain host commands, shell integration, and base OpenCode
+   and Codex configuration.
+2. Start Indigo so its inference and MCP endpoints are available on the
+   configured loopback ports.
+3. Set ACORN's OpenCode sync target to Indigo in the ACORN configuration:
+
+   ```yaml
+   config:
+     opencode:
+       baseUrl: http://127.0.0.1:10732/v1
+       providerId: indigo
+       providerName: Indigo local models
+   ```
+
+4. Preview and apply ACORN's model-derived OpenCode configuration:
+
+   ```shell
+   acorn sync --opencode --dry-run
+   acorn sync --opencode
+   ```
+
+`acorn sync` is authoritative for the host's available local models and
+OpenCode provider/model entries. It preserves unrelated client settings. The
+shell-setup repository owns installing the clients and distributing their base
+configuration, including MCP endpoints; ACORN does not currently synchronize
+Codex. Indigo does not overwrite host dotfiles.
+
+[`config/agents/opencode.host.json`](config/agents/opencode.host.json) and
+[`config/agents/codex.host.toml`](config/agents/codex.host.toml) are canonical
+Indigo MCP templates intended for consumption by `my-shell-setup`, not an
+independent manual host-install mechanism. The OpenCode template intentionally
+contains no model inventory because ACORN supplies it.
+
+## Pinokio reverse proxy
+
+Pinokio and OpenViking are installed in the main image and supervised by
+`/etc/services.d/pinokio` and `/etc/services.d/openviking`. Pinokio manages a
+Caddy 2.9.1 process that automatically tracks web applications launched on
+dynamic internal ports. Indigo selects the custom-domain router with
+`PINOKIO_DOMAIN=pinokio.localhost` and publishes fixed port `8080` as host port
+`42080`.
+
+Applications are reached using hostnames generated by Pinokio, normally in the
+form `<app>-pinokio.localhost:42080`. The management UI remains on port `42000`.
+For access from other machines, set `PINOKIO_DOMAIN` to a domain whose wildcard
+DNS points at the Docker host.
+
+The proxy removes per-app publishing for HTTP, HTTPS, and WebSocket apps.
+Indigo does not publish a dynamic raw TCP/UDP port range; Pinokio apps must
+use the managed web proxy or add an explicit, narrowly scoped port mapping to
+`compose.yaml` when a non-HTTP protocol genuinely requires one.
+
+## External access and security
+
+Set `INDIGO_PUBLISH_HOST=0.0.0.0` to accept connections through any host
+interface. Do this only on a trusted network or behind an authenticated,
+TLS-terminating gateway: most MCP services have no inbound authentication and
+the filesystem MCP can modify the shared workspace.
+
+Common port overrides include:
+
+```dotenv
+INDIGO_PUBLISH_HOST=127.0.0.1
+INFERENCE_PUBLISHED_PORT=10732
+OPENVIKING_PUBLISHED_PORT=1933
+PINOKIO_PUBLISHED_PORT=42000
+PINOKIO_PROXY_PUBLISHED_PORT=42080
+MCP_FILESYSTEM_PUBLISHED_PORT=11002
+MCP_RUST_ANALYZER_PUBLISHED_PORT=11003
+```
+
+The Rust Analyzer MCP starts against `/home/nonroot/dev` by default. Set
+`RUST_ANALYZER_WORKSPACE` to a Rust project path inside the shared workspace
+when its `Cargo.toml` is below that root, for example
+`RUST_ANALYZER_WORKSPACE=/home/nonroot/dev/my-rust-project`.
+
+Optional upstream credentials are passed at runtime and never baked into the
+images through `OPENVIKING_CONF_CONTENT`.
+
+## Persistent data
+
+Compose volumes retain the workspace, models, OpenCode state, Codex state,
+OpenViking data at `~/.openviking`, Pinokio installations at `~/.pinokio`,
+and Cargo cache for Rust Analyzer. Indigo expects models beneath
+`/home/nonroot/.models`; ACORN remains responsible for model acquisition and
+generated `llama-swap` entries.

@@ -1,0 +1,23 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+set -euo pipefail
+
+if [[ "${INDIGO_SEED_AGENT_CONFIG:-true}" != "true" ]]; then
+	exit 0
+fi
+
+install_default() {
+	local source="$1"
+	local target="$2"
+	local mode="$3"
+
+	if [[ -e "${target}" ]]; then
+		return
+	fi
+
+	install -d -m 0755 "$(dirname "${target}")"
+	install -m "${mode}" "${source}" "${target}"
+}
+
+install_default /etc/indigo/defaults/opencode.json "${HOME}/.config/opencode/opencode.json" 0644
+install_default /etc/indigo/defaults/codex.toml "${HOME}/.codex/config.toml" 0600

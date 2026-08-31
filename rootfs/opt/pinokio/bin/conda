@@ -1,0 +1,22 @@
+#!/bin/sh
+set -eu
+
+pinokio_home=${PINOKIO_HOME:-${HOME}/.pinokio}
+managed_conda="${pinokio_home}/bin/miniforge/bin/conda"
+
+if [ -x "${managed_conda}" ]; then
+	exec "${managed_conda}" "$@"
+fi
+
+# Pinokio wraps system tools in Conda activation commands even before its
+# managed Miniforge bootstrap has completed. Those shell operations are safe
+# no-ops; every other Conda request should still fail visibly.
+case "${1:-} ${2:-}" in
+"shell.bash hook" | "activate " | "activate base" | "deactivate ")
+	exit 0
+	;;
+*)
+	echo "Pinokio's managed Conda runtime is not installed yet" >&2
+	exit 127
+	;;
+esac

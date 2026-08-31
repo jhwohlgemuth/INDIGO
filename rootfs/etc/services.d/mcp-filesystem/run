@@ -1,0 +1,14 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+set -euo pipefail
+
+workspace="${MCP_FILESYSTEM_WORKSPACE:-${HOME}/dev}"
+port="${MCP_FILESYSTEM_PORT:-11002}"
+
+install -d -m 0755 "${workspace}"
+
+exec /opt/mcp/node/bin/supergateway \
+	--stdio "/opt/mcp/node/bin/mcp-server-filesystem ${workspace}" \
+	--outputTransport streamableHttp \
+	--port "${port}" \
+	--healthEndpoint /healthz

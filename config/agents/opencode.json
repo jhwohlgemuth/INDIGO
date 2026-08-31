@@ -1,0 +1,35 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "indigo/gpt-oss-20b",
+  "provider": {
+    "indigo": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Indigo local models",
+      "options": {
+        "baseURL": "http://127.0.0.1:10732/v1"
+      },
+      "models": {
+        "gpt-oss-20b": {
+          "name": "GPT-OSS 20B (local)"
+        }
+      }
+    }
+  },
+  "mcp": {
+    "filesystem": {
+      "type": "remote",
+      "url": "http://127.0.0.1:11002/mcp",
+      "enabled": true
+    },
+    "rust-analyzer": {
+      "type": "remote",
+      "url": "http://127.0.0.1:11003/mcp",
+      "enabled": true
+    },
+    "openviking": {
+      "type": "remote",
+      "url": "http://127.0.0.1:1933/mcp",
+      "enabled": true
+    }
+  }
+}
