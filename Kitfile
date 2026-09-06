@@ -1,0 +1,43 @@
+manifestVersion: 1.0.0
+
+package:
+  name: indigo
+  version: 0.1.2
+  description: >-
+    Isolated Native Development Instance for Generative Operations: a
+    GPU-enabled, local-first environment for model inference, coding agents,
+    context services, and workspace-aware MCP tooling.
+  authors:
+    - Jason Wohlgemuth
+  license: MIT
+
+code:
+  - path: ./Dockerfile
+    description: Multi-stage GPU workstation image and service runtime.
+    license: MIT
+  - path: ./compose.yaml
+    description: Local deployment topology, ports, persistent volumes, and runtime configuration.
+    license: MIT
+  - path: ./.env
+    description: Version and image-build defaults for the Compose deployment.
+    license: MIT
+  - path: ./Makefile
+    description: Build, lifecycle, formatting, and validation commands.
+    license: MIT
+  - path: ./config
+    description: Inference-router and coding-agent configuration supplied by INDIGO.
+    license: MIT
+  - path: ./rootfs
+    description: s6 service definitions and container filesystem additions.
+    license: MIT
+  - path: ./scripts
+    description: Image build support and aggregate runtime health checks.
+    license: MIT
+
+docs:
+  - path: ./README.md
+    description: Setup, operation, endpoint, persistence, and security guidance.
+  - path: ./ARCHITECTURE.md
+    description: Service topology, ownership boundaries, and trust model.
+  - path: ./LICENSE
+    description: MIT license terms for the packaged source.
