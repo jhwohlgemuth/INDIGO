@@ -73,6 +73,22 @@ relies on:
 `NOTEBOOK_VERSION` remains pinned. A newer base must pass an image build and
 runtime health check before becoming the default.
 
+## Inference build contract
+
+llama.cpp is compiled from source with the CUDA backend so the image carries its
+own GPU-capable `llama-server`. That build has two obligations beyond producing
+the executables. The binaries are dynamically linked against `libllama`,
+`libggml`, and `libggml-cuda`, so the shared objects are installed to
+`/usr/local/lib` and that directory leads `LD_LIBRARY_PATH`. And because
+`GGML_BACKEND_DL` is on, backends are discovered in the directory holding the
+executable, so the backend objects are also installed to `/usr/local/bin`;
+without them the server starts and then fails the first model load with `no
+backends are loaded`. `scripts/build_llama_cpp_from_source.sh` verifies both at
+build time, because a build that misses either still produces an image that
+starts cleanly and only fails when `llama-swap` tries to serve a model. Router
+liveness, for example `llama-swap`'s own `/health` response, is not evidence
+that inference works; only a loaded model is.
+
 ## Networking and trust boundary
 
 Published services bind to host loopback by default. Changing
@@ -85,6 +101,36 @@ Pinokio's proxy hides dynamic ports for HTTP/WebSocket apps; it does not turn
 arbitrary TCP/UDP apps into HTTP. Indigo does not publish a general-purpose
 dynamic port range, so exceptional non-HTTP services require an explicit port
 mapping in the main Compose configuration.
+
+## Instance boundaries
+
+`.env` is the single source of truth for the image tag, host publishing, and
+instance identity. `compose.yaml` interpolates those values with `${VAR:?}`
+and the Makefile defines no fallbacks, so a missing value fails at the Compose
+and Make boundaries instead of producing an empty image reference or port.
+`scripts/check.sh` owns the validation contract and runs in `make check`.
+Optional behavior knobs are the exception: they keep the defaults baked into
+`compose.yaml` and the image.
+
+`scripts/new.sh` derives an instance file from `.env` by adding an
+offset to each published port and assigning its own Compose project name,
+container hostname, and Pinokio domain. Compose names volumes after the project
+and the image is shared, so instances separate host ports and persistent state
+without duplicating the container contract.
+
+## Log surface contract
+
+Long-running services log their startup state once and stay silent until that
+state changes. Repeated polling is not part of the observable log surface. s6
+restarts a longrun that exits, so a service that exits on a handled condition
+turns into an unbounded log loop; the contract therefore requires services to
+block rather than exit while they are waiting, and to bound their own retries
+when the dependency they wait on is broken. OpenViking is the case in point: it
+waits for `ov.conf` in-process, passes only flags the installed CLI accepts,
+binds loopback so `dev` auth mode is usable, and retries a rejected
+configuration on an interval instead of letting s6 restart it several times a
+second. Default agent config must also be readable by `nonroot`, since
+`/etc/indigo/defaults` is seeded by a root-owned one-shot at boot.
 
 ## Ownership boundaries
 

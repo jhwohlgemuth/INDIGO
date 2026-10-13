@@ -1,23 +1,28 @@
 ---
 # yamllint disable rule:line-length
-name: indigo
+# Required variables use ${VAR:?} so Compose fails immediately when one is
+# missing from the environment file. .env is the single source of truth for the
+# image reference, host publishing, and instance identity.
+# scripts/check.sh validates the file; scripts/new.sh derives
+# per-instance copies from it.
+name: "${COMPOSE_PROJECT_NAME:-indigo}"
 
 x-restart-policy: &restart-policy unless-stopped
 
 services:
   indigo:
-    image: "${REGISTRY:-ghcr.io}/${REGISTRY_PROJECT:-jhwohlgemuth}/${IMAGE:-indigo}:${VERSION:-0.1.0}"
+    image: "${REGISTRY:?}/${REGISTRY_PROJECT:?}/${IMAGE:?}:${VERSION:?}"
     build:
       context: .
       args:
-        NOTEBOOK_VERSION: "${NOTEBOOK_VERSION:-1.0.4}"
-    hostname: "${INDIGO_HOSTNAME:-indigo}"
+        NOTEBOOK_VERSION: "${NOTEBOOK_VERSION:?}"
+    hostname: "${INDIGO_HOSTNAME:?}"
     restart: *restart-policy
     stdin_open: true
     tty: true
     gpus: all
-    shm_size: "${INDIGO_SHM_SIZE:-2gb}"
-    stop_grace_period: "${INDIGO_STOP_GRACE_PERIOD:-1m}"
+    shm_size: "${INDIGO_SHM_SIZE:?}"
+    stop_grace_period: "${INDIGO_STOP_GRACE_PERIOD:?}"
     environment:
       HEALTHCHECK_HOST: 127.0.0.1
       LLAMA_ARG_HOST: 0.0.0.0
@@ -35,25 +40,25 @@ services:
       RUST_ANALYZER_WORKSPACE: "${RUST_ANALYZER_WORKSPACE:-/home/nonroot/dev}"
       OPENVIKING_URL: http://127.0.0.1:1933
       OPENVIKING_CONFIG_FILE: /home/nonroot/.openviking/ov.conf
-      OPENVIKING_SERVER_HOST: 0.0.0.0
+      OPENVIKING_SERVER_HOST: 127.0.0.1
       OPENVIKING_SERVER_PORT: "1933"
       OPENVIKING_WITH_BOT: "${OPENVIKING_WITH_BOT:-0}"
       OPENVIKING_CONF_CONTENT: "${OPENVIKING_CONF_CONTENT:-}"
       PINOKIO_HOME: /home/nonroot/.pinokio
-      PINOKIO_DOMAIN: "${PINOKIO_DOMAIN:-pinokio.localhost}"
+      PINOKIO_DOMAIN: "${PINOKIO_DOMAIN:?}"
       PINOKIO_HTTPS_ACTIVE: "1"
       PINOKIO_NETWORK_ACTIVE: "1"
     ports:
-      - "${INDIGO_PUBLISH_HOST:-127.0.0.1}:${INFERENCE_PUBLISHED_PORT:-10732}:${LLAMA_ARG_PORT:-10732}"
-      - "${INDIGO_PUBLISH_HOST:-127.0.0.1}:${CODE_SERVER_PUBLISHED_PORT:-1337}:1337"
-      - "${INDIGO_PUBLISH_HOST:-127.0.0.1}:${VERDACCIO_PUBLISHED_PORT:-4873}:4873"
-      - "${INDIGO_PUBLISH_HOST:-127.0.0.1}:${JUPYTER_PUBLISHED_PORT:-13337}:13337"
-      - "${INDIGO_PUBLISH_HOST:-127.0.0.1}:${MARIMO_PUBLISHED_PORT:-13338}:13338"
-      - "${INDIGO_PUBLISH_HOST:-127.0.0.1}:${OPENVIKING_PUBLISHED_PORT:-1933}:1933"
-      - "${INDIGO_PUBLISH_HOST:-127.0.0.1}:${PINOKIO_PUBLISHED_PORT:-42000}:42000"
-      - "${INDIGO_PUBLISH_HOST:-127.0.0.1}:${PINOKIO_PROXY_PUBLISHED_PORT:-42080}:8080"
-      - "${INDIGO_PUBLISH_HOST:-127.0.0.1}:${MCP_FILESYSTEM_PUBLISHED_PORT:-11002}:11002"
-      - "${INDIGO_PUBLISH_HOST:-127.0.0.1}:${MCP_RUST_ANALYZER_PUBLISHED_PORT:-11003}:11003"
+      - "${INDIGO_PUBLISH_HOST:?}:${INFERENCE_PUBLISHED_PORT:?}:10732"
+      - "${INDIGO_PUBLISH_HOST:?}:${CODE_SERVER_PUBLISHED_PORT:?}:1337"
+      - "${INDIGO_PUBLISH_HOST:?}:${VERDACCIO_PUBLISHED_PORT:?}:4873"
+      - "${INDIGO_PUBLISH_HOST:?}:${JUPYTER_PUBLISHED_PORT:?}:13337"
+      - "${INDIGO_PUBLISH_HOST:?}:${MARIMO_PUBLISHED_PORT:?}:13338"
+      - "${INDIGO_PUBLISH_HOST:?}:${OPENVIKING_PUBLISHED_PORT:?}:1933"
+      - "${INDIGO_PUBLISH_HOST:?}:${PINOKIO_PUBLISHED_PORT:?}:42000"
+      - "${INDIGO_PUBLISH_HOST:?}:${PINOKIO_PROXY_PUBLISHED_PORT:?}:8080"
+      - "${INDIGO_PUBLISH_HOST:?}:${MCP_FILESYSTEM_PUBLISHED_PORT:?}:11002"
+      - "${INDIGO_PUBLISH_HOST:?}:${MCP_RUST_ANALYZER_PUBLISHED_PORT:?}:11003"
     volumes:
       - workspace:/home/nonroot/dev
       - models:/home/nonroot/.models

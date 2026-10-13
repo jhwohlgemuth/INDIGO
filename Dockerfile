@@ -64,14 +64,16 @@ ENV CXX=g++-14
 ENV CUDAHOSTCXX=g++-14
 ENV CUDA_HOME=/usr/local/cuda
 ENV PATH="${CUDA_HOME}/bin:${PATH}"
-ENV LD_LIBRARY_PATH="${CUDA_HOME}/lib64"
+ENV LD_LIBRARY_PATH="/usr/local/lib:${CUDA_HOME}/lib64"
 ENV LLAMA_ARG_CTX_SIZE="${CONTEXT_SIZE}"
 ENV LLAMA_ARG_HOST=0.0.0.0
 ENV LLAMA_ARG_N_PARALLEL=2
 ENV LLAMA_ARG_PORT="${PORT}"
 ENV MODEL_DIRECTORY="${MODEL_DIRECTORY}"
 ENV OPENVIKING_CONFIG_FILE="${HOME}/.openviking/ov.conf"
-ENV OPENVIKING_SERVER_HOST=0.0.0.0
+# openviking-server refuses dev auth mode on a non-loopback host, so the
+# container default is loopback; OPENVIKING_URL already uses 127.0.0.1.
+ENV OPENVIKING_SERVER_HOST=127.0.0.1
 ENV OPENVIKING_SERVER_PORT=1933
 ENV MCP_FILESYSTEM_PORT=11002
 ENV MCP_FILESYSTEM_WORKSPACE="${HOME}/dev"
@@ -120,7 +122,8 @@ RUN sed -i 's/\r$//' /tmp/build_llama_cpp_from_source.sh \
     && rm -f /tmp/build_llama_cpp_from_source.sh
 RUN install -d -m 0755 -o "${USER_NAME}" -g "${USER_NAME}" "${HOME}/.openviking" "${HOME}/.pinokio" \
     "${CARGO_HOME}" \
-    && install -d -m 0755 /etc/indigo/defaults
+    && install -d -m 0755 /etc/indigo/defaults \
+    && chmod 0755 /etc/indigo
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
         bluez \

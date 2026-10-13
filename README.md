@@ -26,36 +26,62 @@ bind address are configurable with Compose environment variables.
 
 ## Quick start
 
-Build and start the default stack:
+Run the published image with a single copy-pasteable command; no repository,
+Compose file, environment file, or build step is required. This is exactly what
+`make run` expands to from the committed `.env`, with the values inlined. State
+lives in named volumes prefixed with the container name:
 
 ```shell
-docker compose up --build --detach
-docker compose ps
+docker run -d -i -t --name indigo --hostname indigo --gpus all --restart unless-stopped --shm-size 2gb -p 10732:10732 -p 1337:1337 -p 4873:4873 -p 13337:13337 --volume indigo-models:/home/nonroot/.models --volume indigo-opencode-config:/home/nonroot/.config/opencode --volume indigo-opencode-data:/home/nonroot/.local/share/opencode ghcr.io/jhwohlgemuth/indigo:0.1.4
 ```
 
-To create only the main Indigo container without Compose, including host
-access to OpenViking, the Pinokio management UI, and Pinokio's stable app proxy,
-use host bind mounts appropriate for your shell.
+To tear it down:
+
+```shell
+docker stop indigo
+docker rm indigo
+```
+
+If you have this repository, `make run` renders a similar command from `.env`
+instead of hardcoding it, so published ports, mounted volumes, the image tag,
+and the publish address stay configurable:
+
+```shell
+make run
+make run ENV_FILE=.env.two
+make stop
+make rm
+```
+
+To try the image with nothing configured at all, `make start` runs it with no
+published ports, no volumes, and no `.env` edits. The image's own defaults
+apply and the services are reachable inside the container only, which is enough
+to attach a shell or exercise the image:
+
+```shell
+make start
+docker attach indigo
+make stop
+```
+
+The same container can be started with host bind mounts instead of named
+volumes, which keeps the workspace, models, OpenViking state, and Pinokio
+installations directly accessible from the host. Create any missing host
+directories first.
 
 Windows PowerShell:
 
 ```powershell
-docker run --detach --gpus all --name indigo --hostname indigo --restart unless-stopped --shm-size 2g --publish 10732:10732 --publish 127.0.0.1:1337:1337 --publish 1933:1933 --publish 42000:42000 --publish 42080:8080 --publish 11002:11002 --publish 11003:11003 --volume "${HOME}\dev:/home/nonroot/dev" --volume "${HOME}\.models:/home/nonroot/.models" --volume "${HOME}\.openviking:/home/nonroot/.openviking" --volume "${HOME}\.pinokio:/home/nonroot/.pinokio" ghcr.io/jhwohlgemuth/indigo:0.1.4
+docker run --detach --gpus all --name indigo --hostname indigo --restart unless-stopped --shm-size 2g -p 10732:10732 -p 127.0.0.1:1337:1337 -p 1933:1933 -p 42000:42000 -p 42080:8080 -p 11002:11002 -p 11003:11003 --volume "${HOME}\dev:/home/nonroot/dev" --volume "${HOME}\.models:/home/nonroot/.models" ghcr.io/jhwohlgemuth/indigo:0.1.4
 ```
 
 Linux or macOS:
 
 ```shell
-docker run --detach --gpus all --name indigo --hostname indigo --restart unless-stopped --shm-size 2g --publish 10732:10732 --publish 127.0.0.1:1337:1337 --publish 1933:1933 --publish 42000:42000 --publish 42080:8080 --publish 11002:11002 --publish 11003:11003 --volume "$HOME/dev:/home/nonroot/dev" --volume "$HOME/.models:/home/nonroot/.models" --volume "$HOME/.openviking:/home/nonroot/.openviking" --volume "$HOME/.pinokio:/home/nonroot/.pinokio" ghcr.io/jhwohlgemuth/indigo:0.1.4
+docker run --detach --gpus all --name indigo --hostname indigo --restart unless-stopped --shm-size 2g -p 10732:10732 -p 127.0.0.1:1337:1337 -p 1933:1933 -p 42000:42000 -p 42080:8080 -p 11002:11002 -p 11003:11003 --volume "$HOME/dev:/home/nonroot/dev" --volume "$HOME/.models:/home/nonroot/.models" ghcr.io/jhwohlgemuth/indigo:0.1.4
 ```
 
-Create any missing host directories before running the command. These paths
-keep the workspace, models, OpenViking state, and Pinokio installations directly
-accessible from the host rather than in Docker-managed volumes.
-
-This exposes OpenViking at `http://127.0.0.1:1933`, Pinokio at
-`http://127.0.0.1:42000`, proxied Pinokio applications through port `42080`,
-Filesystem MCP on `11002`, and Rust Analyzer MCP on `11003`.
+Create any missing host directories before running the command.
 
 Equivalent Make shortcuts are available for routine stack operations:
 
@@ -80,6 +106,69 @@ are s6 services in that container.
 
 `COMPOSE` and `COMPOSE_ARGS` are overridable.
 
+## Compose
+
+Compose is the build-from-source path. It builds the image locally, seeds the
+agent configuration, and keeps state in Docker-managed volumes:
+
+```shell
+docker compose up --build --detach
+docker compose ps
+```
+
+`.env` is the single source of truth for both Compose and `make run`. It holds
+the image tag, the instance identity, and every published host port, so a port
+change is a one-line edit there. `compose.yaml` declares those variables with
+`${VAR:?}` and the Makefile defines no fallbacks, so a missing value fails
+immediately instead of rendering an empty image reference or port.
+
+Optional behavior knobs (`INDIGO_DEFAULT_MODEL`, `RUST_ANALYZER_WORKSPACE`,
+`LLAMA_ARG_CTX_SIZE`, `OPENVIKING_WITH_BOT`, `OPENVIKING_CONF_CONTENT`, and the
+like) still fall back to the defaults in `compose.yaml` and the image; they are
+listed as comments at the bottom of `.env`.
+
+Validate the file after editing it:
+
+```shell
+make check-env
+make check-env ENV_FILE=.env.two
+```
+
+## Multiple instances
+
+`scripts/new.sh` copies `.env` into a per-instance file with every
+published port incremented, its own Compose project name, its own hostname, and
+its own Pinokio domain. Named volumes are namespaced by project name, so
+instances do not share state:
+
+```shell
+scripts/new.sh two            # writes .env.two with +1 on every port
+scripts/new.sh three 1000     # writes .env.three with +1000
+```
+
+`make instance NAME=two` is an equivalent shortcut. Start an instance by
+selecting its environment file:
+
+```shell
+make up ENV_FILE=.env.two
+make logs ENV_FILE=.env.two
+make down ENV_FILE=.env.two
+```
+
+Equivalent by hand:
+
+```shell
+docker compose --env-file .env.two -p indigo-two up --detach
+```
+
+`COMPOSE_PROJECT_NAME` and `INDIGO_HOSTNAME` in the generated file also drive the
+raw `docker run` path, so `make run ENV_FILE=.env.two` creates a container named
+`indigo-two` with its own volumes and published ports. Instance files are
+ignored by git; regenerate them at any time, or pass `BASE_ENV_FILE=.env.two` to
+derive one instance from another. Both generators validate their input and
+output with `scripts/check.sh`, so a malformed base file or a port collision
+aborts before anything is written.
+
 Before submitting changes, normalize text files, format shell scripts, and run
 the repository checks with:
 
@@ -89,7 +178,9 @@ make prepare
 
 `prepare` runs `make format` first; the format target uses `dos2unix` for shell,
 ShellCheck, Compose, workflow, and configuration YAML files, then applies
-`shfmt` to shell scripts.
+`shfmt` to shell scripts. `make check` runs `shfmt --diff`, ShellCheck, and
+`scripts/check.sh` against `.env` or the selected `ENV_FILE`, so a broken
+environment fails before an image build starts.
 
 OpenViking waits for a valid configuration on first use. Initialize it,
 validate the selected local or remote embedding/VLM providers, and restart:
@@ -98,6 +189,25 @@ validate the selected local or remote embedding/VLM providers, and restart:
 docker compose exec indigo openviking-server init
 docker compose exec indigo openviking-server doctor
 ```
+
+The waiting service logs the missing configuration once at startup and then
+stays silent until `ov.conf` exists; it logs a single line when the file
+appears and the server starts. The Makefile shortcut is `make exec CMD="openviking-server init"`.
+
+If the server rejects a configuration it exits, and s6 would restart it several
+times a second, repeating the same error forever. The service therefore retries
+on a bounded interval instead, reporting the failure once per attempt, and
+retries immediately when `ov.conf` changes. Set `OPENVIKING_RETRY_INTERVAL` to
+change the interval (default `300` seconds).
+
+OpenViking binds `127.0.0.1` by default because `openviking-server` refuses
+`dev` auth mode on a non-loopback host. Set `OPENVIKING_SERVER_HOST` and
+`server.auth_mode` together if you need a different binding; `api_key` auth with
+a configured `server.root_api_key` is required before binding beyond loopback.
+
+`OPENVIKING_WITH_BOT=1` adds the optional bot endpoint. It is off by default,
+and the flag is only passed when enabled, so the server never starts with an
+argument its CLI does not accept.
 
 For a local provider, the inference endpoint visible from OpenViking is
 `http://127.0.0.1:10732/v1`. The chosen model must provide the capability
@@ -179,7 +289,7 @@ interface. Do this only on a trusted network or behind an authenticated,
 TLS-terminating gateway: most MCP services have no inbound authentication and
 the filesystem MCP can modify the shared workspace.
 
-Common port overrides include:
+Common port overrides, edited in `.env` and validated with `make check-env`:
 
 ```dotenv
 INDIGO_PUBLISH_HOST=127.0.0.1
