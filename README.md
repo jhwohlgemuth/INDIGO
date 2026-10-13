@@ -27,13 +27,28 @@ bind address are configurable with Compose environment variables.
 ## Quick start
 
 Run the published image with a single copy-pasteable command; no repository,
-Compose file, environment file, or build step is required. This is exactly what
-`make run` expands to from the committed `.env`, with the values inlined. State
-lives in named volumes prefixed with the container name:
+Compose file, environment file, or build step is required. This lean default
+publishes the core services and keeps models and agent state persistent; every
+port binds to `127.0.0.1`:
 
 ```shell
-docker run -d -i -t --name indigo --hostname indigo --gpus all --restart unless-stopped --shm-size 2gb -p 10732:10732 -p 1337:1337 -p 4873:4873 -p 13337:13337 --volume indigo-models:/home/nonroot/.models --volume indigo-opencode-config:/home/nonroot/.config/opencode --volume indigo-opencode-data:/home/nonroot/.local/share/opencode ghcr.io/jhwohlgemuth/indigo:0.1.4
+docker run -dit --name indigo --hostname indigo --gpus all --restart unless-stopped --shm-size 2gb -p 127.0.0.1:10732:10732 -p 127.0.0.1:1337:1337 -p 127.0.0.1:4873:4873 -p 127.0.0.1:13337:13337 --volume indigo-models:/home/nonroot/.models --volume indigo-opencode-config:/home/nonroot/.config/opencode --volume indigo-opencode-data:/home/nonroot/.local/share/opencode ghcr.io/jhwohlgemuth/indigo:0.1.4
 ```
+
+That exposes the OpenAI-compatible inference endpoint at
+`http://127.0.0.1:10732/v1`, code-server at `https://127.0.0.1:1337`, Verdaccio
+at `4873`, and Jupyter at `13337`. Pinokio (`42000`, `42080`), OpenViking
+(`1933`), Marimo (`13338`), and the MCP servers (`11002`, `11003`) run in the
+container but are not published here, and the workspace, OpenViking state,
+Pinokio installations, Codex, and cargo cache are not mounted, so they do not
+survive `docker rm`.
+
+`-i -t` is required. The image's default command is an interactive `zsh`, which
+exits immediately without a TTY; combined with `--restart unless-stopped` that
+becomes an endless restart loop that reprints every service's startup logs.
+
+`--gpus all` needs the NVIDIA container toolkit installed on the Docker host.
+Without it the container cannot start, even when a GPU is present.
 
 To tear it down:
 
@@ -42,8 +57,8 @@ docker stop indigo
 docker rm indigo
 ```
 
-If you have this repository, `make run` renders a similar command from `.env`
-instead of hardcoding it, so published ports, mounted volumes, the image tag,
+If you have this repository, `make run` publishes every service and mounts all
+eight volumes exactly as declared in `.env`, so ports, volumes, the image tag,
 and the publish address stay configurable:
 
 ```shell
@@ -64,24 +79,23 @@ docker attach indigo
 make stop
 ```
 
-The same container can be started with host bind mounts instead of named
-volumes, which keeps the workspace, models, OpenViking state, and Pinokio
-installations directly accessible from the host. Create any missing host
-directories first.
+A fully published variant with host bind mounts instead of named volumes is
+also available. It exposes every service and keeps the workspace, models,
+OpenViking state, Pinokio installations, and agent state directly accessible
+from the host. Create any missing host directories first. Its ports match `make
+run`; only the volume sources differ.
 
 Windows PowerShell:
 
 ```powershell
-docker run --detach --gpus all --name indigo --hostname indigo --restart unless-stopped --shm-size 2g -p 10732:10732 -p 127.0.0.1:1337:1337 -p 1933:1933 -p 42000:42000 -p 42080:8080 -p 11002:11002 -p 11003:11003 --volume "${HOME}\dev:/home/nonroot/dev" --volume "${HOME}\.models:/home/nonroot/.models" ghcr.io/jhwohlgemuth/indigo:0.1.4
+docker run -dit --name indigo --hostname indigo --gpus all --restart unless-stopped --shm-size 2gb -p 127.0.0.1:10732:10732 -p 127.0.0.1:1337:1337 -p 127.0.0.1:4873:4873 -p 127.0.0.1:13337:13337 -p 127.0.0.1:13338:13338 -p 127.0.0.1:1933:1933 -p 127.0.0.1:42000:42000 -p 127.0.0.1:42080:8080 -p 127.0.0.1:11002:11002 -p 127.0.0.1:11003:11003 --volume "${HOME}\dev:/home/nonroot/dev" --volume "${HOME}\.models:/home/nonroot/.models" --volume "${HOME}\.openviking:/home/nonroot/.openviking" --volume "${HOME}\.pinokio:/home/nonroot/.pinokio" --volume "${HOME}\.config/opencode:/home/nonroot/.config/opencode" --volume "${HOME}\.local/share/opencode:/home/nonroot/.local/share/opencode" --volume "${HOME}\.codex:/home/nonroot/.codex" --volume "${HOME}\.cargo:/home/nonroot/.cargo" ghcr.io/jhwohlgemuth/indigo:0.1.4
 ```
 
 Linux or macOS:
 
 ```shell
-docker run --detach --gpus all --name indigo --hostname indigo --restart unless-stopped --shm-size 2g -p 10732:10732 -p 127.0.0.1:1337:1337 -p 1933:1933 -p 42000:42000 -p 42080:8080 -p 11002:11002 -p 11003:11003 --volume "$HOME/dev:/home/nonroot/dev" --volume "$HOME/.models:/home/nonroot/.models" ghcr.io/jhwohlgemuth/indigo:0.1.4
+docker run -dit --name indigo --hostname indigo --gpus all --restart unless-stopped --shm-size 2gb -p 127.0.0.1:10732:10732 -p 127.0.0.1:1337:1337 -p 127.0.0.1:4873:4873 -p 127.0.0.1:13337:13337 -p 127.0.0.1:13338:13338 -p 127.0.0.1:1933:1933 -p 127.0.0.1:42000:42000 -p 127.0.0.1:42080:8080 -p 127.0.0.1:11002:11002 -p 127.0.0.1:11003:11003 --volume "$HOME/dev:/home/nonroot/dev" --volume "$HOME/.models:/home/nonroot/.models" --volume "$HOME/.openviking:/home/nonroot/.openviking" --volume "$HOME/.pinokio:/home/nonroot/.pinokio" --volume "$HOME/.config/opencode:/home/nonroot/.config/opencode" --volume "$HOME/.local/share/opencode:/home/nonroot/.local/share/opencode" --volume "$HOME/.codex:/home/nonroot/.codex" --volume "$HOME/.cargo:/home/nonroot/.cargo" ghcr.io/jhwohlgemuth/indigo:0.1.4
 ```
-
-Create any missing host directories before running the command.
 
 Equivalent Make shortcuts are available for routine stack operations:
 
