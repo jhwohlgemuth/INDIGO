@@ -102,6 +102,7 @@ COPY --chmod=0644 --chown=${USER_NAME}:${USER_NAME} ./config/llama-swap/config.y
 COPY --chmod=0644 ./config/agents/opencode.json /etc/indigo/defaults/opencode.json
 COPY --chmod=0644 ./config/agents/codex.toml /etc/indigo/defaults/codex.toml
 COPY --chmod=0755 ./scripts/healthcheck.sh /healthcheck
+COPY --chmod=0755 ./scripts/build_llama_cpp_from_source.sh /tmp/build_llama_cpp_from_source.sh
 #
 # Post
 #
@@ -114,6 +115,9 @@ RUN ln -s /usr/local/cargo/bin/cargo /usr/local/bin/cargo \
     && ln -s /usr/local/cargo/bin/rustup /usr/local/bin/rustup
 RUN install_cuda_toolkit \
     && install -d -m 0755 -o "${USER_NAME}" -g "${USER_NAME}" "${MODEL_DIRECTORY}" "${HOME}/.config/llama-swap"
+RUN sed -i 's/\r$//' /tmp/build_llama_cpp_from_source.sh \
+    && bash /tmp/build_llama_cpp_from_source.sh \
+    && rm -f /tmp/build_llama_cpp_from_source.sh
 RUN install -d -m 0755 -o "${USER_NAME}" -g "${USER_NAME}" "${HOME}/.openviking" "${HOME}/.pinokio" \
     "${CARGO_HOME}" \
     && install -d -m 0755 /etc/indigo/defaults
@@ -134,7 +138,7 @@ USER "${USER_NAME}"
 RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
     && brew tap mostlygeek/llama-swap \
     && brew trust mostlygeek/llama-swap \
-    && brew install --force hf llama.cpp llama-swap
+    && brew install --force hf llama-swap
 USER root
 RUN find /etc/services.d /etc/cont-init.d -type f -exec sed -i 's/\r$//' {} + \
     && sed -i 's/\r$//' /healthcheck /opt/pinokio/bin/conda
