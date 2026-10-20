@@ -1,0 +1,13 @@
+---
+# Replace host bind mounts with Docker-managed volumes.
+services:
+  indigo:
+    volumes:
+      - workspace:/home/nonroot/dev
+      - models:/home/nonroot/.models
+      - llama-swap-config:/home/nonroot/.config/llama-swap
+
+volumes:
+  workspace:
+  models:
+  llama-swap-config:

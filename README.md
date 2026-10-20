@@ -1,188 +1,156 @@
 # Indigo — Isolated Native Development Instance for Generative Operations
 
-> A local workshop for agentic software development — local-first, agents-first. Indigo = **I**solated **N**ative **D**evelopment **I**nstance for **G**enerative **O**perations.
+> A local workshop for agentic software development: local-first, agents-first,
+> and safe on the host by default.
 
-Indigo is a GPU-enabled environment for local models, coding agents, formal
-verification, and research. OpenCode is the primary client and is preconfigured
-for Indigo's OpenAI-compatible `llama-swap` endpoint. Codex remains supported
-through a generated MCP configuration.
+Indigo packages local OpenAI-compatible inference and an optional complete
+agent-development workstation. Choose the experience you need:
 
-The Indigo container runs persistent OpenViking, Pinokio, Filesystem MCP,
-and Rust Analyzer MCP processes under s6 alongside inference.
-
-| Service | Purpose | Host endpoint |
+| Experience | Command | What starts |
 | --- | --- | --- |
-| Indigo inference | Local OpenAI-compatible models | `http://127.0.0.1:10732/v1` |
-| OpenViking | Context database, Studio, and MCP | `http://127.0.0.1:1933` |
-| Pinokio | Management interface | `http://127.0.0.1:42000` |
-| Pinokio proxy | Stable ingress for dynamic web apps | `http://127.0.0.1:42080` |
-| Filesystem MCP | Workspace-scoped file operations | `http://127.0.0.1:11002/mcp` |
-| Rust Analyzer MCP | Workspace diagnostics, navigation, and refactoring | `http://127.0.0.1:11003/mcp` |
+| Standalone image | `docker run … indigo:latest` | Inference plus the base notebook tools |
+| Full workstation | `docker compose up --build --detach` | Inference, notebooks, OpenViking, Pinokio, Filesystem MCP, and Rust Analyzer MCP |
 
-> Lean formal verification has moved to [`jhwohlgemuth/gold`](https://github.com/jhwohlgemuth/gold) as a standalone `mcp-lean` service (`--profile formal`).
+Published ports bind to `127.0.0.1` by default. A model is not baked into the
+image; put the default model at `.indigo/models/gpt-oss-20b`, mount an existing
+model directory, or select another local model with the variables below.
 
-All published ports bind to `127.0.0.1` by default. Every host port and the
-bind address are configurable with Compose environment variables.
+## Quick start: standalone image
 
-## Quick start
+This is the smallest useful Indigo deployment. It publishes only the
+OpenAI-compatible endpoint and leaves optional Indigo services disabled.
 
-Build and start the default stack:
+Windows PowerShell with an NVIDIA GPU:
+
+```powershell
+docker run --detach --tty --gpus all --name indigo --restart unless-stopped --shm-size 2g --publish 127.0.0.1:10732:10732 --volume "${HOME}\.models:/home/nonroot/.models" ghcr.io/jhwohlgemuth/indigo:latest
+```
+
+Linux with an NVIDIA GPU:
+
+```shell
+docker run --detach --tty --gpus all --name indigo --restart unless-stopped --shm-size 2g --publish 127.0.0.1:10732:10732 --volume "$HOME/.models:/home/nonroot/.models" ghcr.io/jhwohlgemuth/indigo:latest
+```
+
+For CPU-only Linux or macOS, use the same command without `--gpus all`. GPU
+acceleration in Docker Desktop is currently a Windows/WSL2 feature; macOS runs
+this image through Docker's Linux virtual machine without NVIDIA passthrough.
+
+The default endpoint is `http://127.0.0.1:10732/v1`. To select another model,
+give it a stable API name and its path inside the container:
+
+```shell
+docker run --detach --tty --gpus all --name indigo --restart unless-stopped --shm-size 2g \
+  --publish 127.0.0.1:10732:10732 \
+  --env INDIGO_DEFAULT_MODEL=my-model \
+  --env INDIGO_DEFAULT_MODEL_PATH=/home/nonroot/.models/my-model/model.gguf \
+  --volume "$HOME/.models:/home/nonroot/.models" \
+  ghcr.io/jhwohlgemuth/indigo:latest
+```
+
+The model name may contain letters, numbers, dots, underscores, and hyphens.
+Indigo creates its initial `llama-swap` and OpenCode configuration from these
+values without overwriting existing configuration.
+
+## Quick start: full workstation
+
+From a checkout of this repository:
 
 ```shell
 docker compose up --build --detach
 docker compose ps
 ```
 
-To create only the main Indigo container without Compose, including host
-access to OpenViking, the Pinokio management UI, and Pinokio's stable app proxy,
-use host bind mounts appropriate for your shell.
+That is the complete setup. Persistent, host-visible data is created under
+`.indigo/`:
 
-Windows PowerShell:
+- `.indigo/workspace` — code visible to Indigo and its MCP servers
+- `.indigo/models` — local model files
+- `.indigo/llama-swap` — generated or user-maintained router configuration
+
+To use existing host directories instead, set `INDIGO_WORKSPACE_PATH`,
+`INDIGO_MODELS_PATH`, and optionally `INDIGO_LLAMA_SWAP_CONFIG_PATH` before
+starting Compose. For example, in PowerShell:
 
 ```powershell
-docker run --detach --gpus all --name indigo --hostname indigo --restart unless-stopped --shm-size 2g --publish 10732:10732 --publish 127.0.0.1:1337:1337 --publish 1933:1933 --publish 42000:42000 --publish 42080:8080 --publish 11002:11002 --publish 11003:11003 --volume "${HOME}\dev:/home/nonroot/dev" --volume "${HOME}\.models:/home/nonroot/.models" --volume "${HOME}\.openviking:/home/nonroot/.openviking" --volume "${HOME}\.pinokio:/home/nonroot/.pinokio" ghcr.io/jhwohlgemuth/indigo:0.1.4
+$env:INDIGO_WORKSPACE_PATH = "${HOME}\dev"
+$env:INDIGO_MODELS_PATH = "${HOME}\.models"
+$env:INDIGO_LLAMA_SWAP_CONFIG_PATH = "${HOME}\.config\llama-swap"
+docker compose up --build --detach
 ```
 
-Linux or macOS:
+Or in a POSIX shell:
 
 ```shell
-docker run --detach --gpus all --name indigo --hostname indigo --restart unless-stopped --shm-size 2g --publish 10732:10732 --publish 127.0.0.1:1337:1337 --publish 1933:1933 --publish 42000:42000 --publish 42080:8080 --publish 11002:11002 --publish 11003:11003 --volume "$HOME/dev:/home/nonroot/dev" --volume "$HOME/.models:/home/nonroot/.models" --volume "$HOME/.openviking:/home/nonroot/.openviking" --volume "$HOME/.pinokio:/home/nonroot/.pinokio" ghcr.io/jhwohlgemuth/indigo:0.1.4
+INDIGO_WORKSPACE_PATH="$HOME/dev" \
+INDIGO_MODELS_PATH="$HOME/.models" \
+INDIGO_LLAMA_SWAP_CONFIG_PATH="$HOME/.config/llama-swap" \
+docker compose up --build --detach
 ```
 
-Create any missing host directories before running the command. These paths
-keep the workspace, models, OpenViking state, and Pinokio installations directly
-accessible from the host rather than in Docker-managed volumes.
-
-This exposes OpenViking at `http://127.0.0.1:1933`, Pinokio at
-`http://127.0.0.1:42000`, proxied Pinokio applications through port `42080`,
-Filesystem MCP on `11002`, and Rust Analyzer MCP on `11003`.
-
-Equivalent Make shortcuts are available for routine stack operations:
+For a completely Docker-managed deployment with no host bind mounts:
 
 ```shell
-make compose-build
-make up
-make ps
-make logs
-make restart
-make down
+docker compose -f compose.yaml -f compose.isolated.yaml up --build --detach
 ```
 
-Each MCP server also has a one-word target:
+For a CPU-only full deployment:
 
 ```shell
-make filesystem
-make rust
+docker compose -f compose.yaml -f compose.cpu.yaml up --build --detach
 ```
 
-The `filesystem` and `rust` targets build and start Indigo because both MCPs
-are s6 services in that container.
+The two overrides can be combined.
 
-`COMPOSE` and `COMPOSE_ARGS` are overridable.
+## Services
 
-Before submitting changes, normalize text files, format shell scripts, and run
-the repository checks with:
+| Service | Host endpoint |
+| --- | --- |
+| OpenAI-compatible inference | `http://127.0.0.1:10732/v1` |
+| code-server | `https://127.0.0.1:1337` |
+| Verdaccio | `https://127.0.0.1:4873` |
+| Jupyter | `https://127.0.0.1:13337` |
+| Marimo | `http://127.0.0.1:13338` |
+| OpenViking | `http://127.0.0.1:1933` |
+| Pinokio | `http://127.0.0.1:42000` |
+| Pinokio application proxy | `http://127.0.0.1:42080` |
+| Filesystem MCP | `http://127.0.0.1:11002/mcp` |
+| Rust Analyzer MCP | `http://127.0.0.1:11003/mcp` |
 
-```shell
-make prepare
-```
-
-`prepare` runs `make format` first; the format target uses `dos2unix` for shell,
-ShellCheck, Compose, workflow, and configuration YAML files, then applies
-`shfmt` to shell scripts.
-
-OpenViking waits for a valid configuration on first use. Initialize it,
-validate the selected local or remote embedding/VLM providers, and restart:
+OpenViking waits for a valid configuration on first use. Initialize it and
+restart the stack:
 
 ```shell
 docker compose exec indigo openviking-server init
 docker compose exec indigo openviking-server doctor
+docker compose restart indigo
 ```
 
-For a local provider, the inference endpoint visible from OpenViking is
-`http://127.0.0.1:10732/v1`. The chosen model must provide the capability
-OpenViking requests; the default coding model is not assumed to be an embedding
-or vision model.
+The full healthcheck treats unconfigured OpenViking as waiting, not failed. It
+requires every other enabled service to respond.
 
-The container healthcheck covers inference, the notebook services, Filesystem
-MCP, Rust Analyzer MCP, OpenViking, the Pinokio management UI, and Pinokio's
-Caddy ingress. Before OpenViking has an `ov.conf`, its health result is reported
-as `WAIT` and does not make the container unhealthy. Once the file exists,
-`http://127.0.0.1:1933/health` must succeed. The remaining checks are required.
+## Operating modes and configuration
 
-OpenCode inside Indigo receives a default config only if
-`~/.config/opencode/opencode.json` does not exist. Codex follows the same rule
-for `~/.codex/config.toml`.
+The published image uses conservative service defaults. Compose enables the
+complete workstation explicitly.
 
-## Host configuration
+| Variable | Image default | Full Compose default |
+| --- | --- | --- |
+| `INDIGO_ENABLE_INFERENCE` | `1` | `1` |
+| `INDIGO_ENABLE_FILESYSTEM` | `0` | `1` |
+| `INDIGO_ENABLE_RUST_ANALYZER` | `0` | `1` |
+| `INDIGO_ENABLE_OPENVIKING` | `0` | `1` |
+| `INDIGO_ENABLE_PINOKIO` | `0` | `1` |
 
-Host setup is deliberately external to the container. The planned workflow is:
+Accepted enabled values are `1`, `true`, `yes`, and `on`. Disabled services do
+not participate in the container healthcheck.
 
-1. Use
-   [`jhwohlgemuth/my-shell-setup`](https://github.com/jhwohlgemuth/my-shell-setup)
-   to install and maintain host commands, shell integration, and base OpenCode
-   and Codex configuration.
-2. Start Indigo so its inference and MCP endpoints are available on the
-   configured loopback ports.
-3. Set ACORN's OpenCode sync target to Indigo in the ACORN configuration:
-
-   ```yaml
-   config:
-     opencode:
-       baseUrl: http://127.0.0.1:10732/v1
-       providerId: indigo
-       providerName: Indigo local models
-   ```
-
-4. Preview and apply ACORN's model-derived OpenCode configuration:
-
-   ```shell
-   acorn sync --opencode --dry-run
-   acorn sync --opencode
-   ```
-
-`acorn sync` is authoritative for the host's available local models and
-OpenCode provider/model entries. It preserves unrelated client settings. The
-shell-setup repository owns installing the clients and distributing their base
-configuration, including MCP endpoints; ACORN does not currently synchronize
-Codex. Indigo does not overwrite host dotfiles.
-
-[`config/agents/opencode.host.json`](config/agents/opencode.host.json) and
-[`config/agents/codex.host.toml`](config/agents/codex.host.toml) are canonical
-Indigo MCP templates intended for consumption by `my-shell-setup`, not an
-independent manual host-install mechanism. The OpenCode template intentionally
-contains no model inventory because ACORN supplies it.
-
-## Pinokio reverse proxy
-
-Pinokio and OpenViking are installed in the main image and supervised by
-`/etc/services.d/pinokio` and `/etc/services.d/openviking`. Pinokio manages a
-Caddy 2.9.1 process that automatically tracks web applications launched on
-dynamic internal ports. Indigo selects the custom-domain router with
-`PINOKIO_DOMAIN=pinokio.localhost` and publishes fixed port `8080` as host port
-`42080`.
-
-Applications are reached using hostnames generated by Pinokio, normally in the
-form `<app>-pinokio.localhost:42080`. The management UI remains on port `42000`.
-For access from other machines, set `PINOKIO_DOMAIN` to a domain whose wildcard
-DNS points at the Docker host.
-
-The proxy removes per-app publishing for HTTP, HTTPS, and WebSocket apps.
-Indigo does not publish a dynamic raw TCP/UDP port range; Pinokio apps must
-use the managed web proxy or add an explicit, narrowly scoped port mapping to
-`compose.yaml` when a non-HTTP protocol genuinely requires one.
-
-## External access and security
-
-Set `INDIGO_PUBLISH_HOST=0.0.0.0` to accept connections through any host
-interface. Do this only on a trusted network or behind an authenticated,
-TLS-terminating gateway: most MCP services have no inbound authentication and
-the filesystem MCP can modify the shared workspace.
-
-Common port overrides include:
+Common network and model settings are:
 
 ```dotenv
 INDIGO_PUBLISH_HOST=127.0.0.1
+INDIGO_DEFAULT_MODEL=gpt-oss-20b
+INDIGO_DEFAULT_MODEL_PATH=/home/nonroot/.models/gpt-oss-20b
 INFERENCE_PUBLISHED_PORT=10732
 OPENVIKING_PUBLISHED_PORT=1933
 PINOKIO_PUBLISHED_PORT=42000
@@ -191,18 +159,69 @@ MCP_FILESYSTEM_PUBLISHED_PORT=11002
 MCP_RUST_ANALYZER_PUBLISHED_PORT=11003
 ```
 
-The Rust Analyzer MCP starts against `/home/nonroot/dev` by default. Set
-`RUST_ANALYZER_WORKSPACE` to a Rust project path inside the shared workspace
-when its `Cargo.toml` is below that root, for example
-`RUST_ANALYZER_WORKSPACE=/home/nonroot/dev/my-rust-project`.
+Set `RUST_ANALYZER_WORKSPACE` to a Rust project inside the mounted workspace
+when its `Cargo.toml` is below the workspace root.
 
-Optional upstream credentials are passed at runtime and never baked into the
-images through `OPENVIKING_CONF_CONTENT`.
+## Agent configuration
 
-## Persistent data
+The container seeds OpenCode and Codex configuration only when the destination
+file does not exist. OpenCode points at Indigo inference and the enabled MCP
+endpoints. Codex receives the MCP endpoints but no forced model configuration.
 
-Compose volumes retain the workspace, models, OpenCode state, Codex state,
-OpenViking data at `~/.openviking`, Pinokio installations at `~/.pinokio`,
-and Cargo cache for Rust Analyzer. Indigo expects models beneath
-`/home/nonroot/.models`; ACORN remains responsible for model acquisition and
-generated `llama-swap` entries.
+For clients running on the host, canonical MCP-only templates are provided at
+[`config/agents/opencode.host.json`](config/agents/opencode.host.json) and
+[`config/agents/codex.host.toml`](config/agents/codex.host.toml). ACORN can then
+own the host's current model inventory:
+
+```shell
+acorn sync --opencode --dry-run
+acorn sync --opencode
+```
+
+Indigo never overwrites host dotfiles.
+
+## Pinokio proxy and external access
+
+Pinokio's managed Caddy proxy exposes HTTP, HTTPS, and WebSocket applications
+through port `42080`, normally as `<app>-pinokio.localhost:42080`. Raw TCP or
+UDP applications still require an explicit port mapping.
+
+Setting `INDIGO_PUBLISH_HOST=0.0.0.0` exposes every Compose-published service to
+the network. Do this only behind an authenticated, TLS-terminating gateway:
+the MCP services do not provide inbound authentication, and Filesystem MCP can
+modify the mounted workspace.
+
+## Routine commands
+
+```shell
+make up              # full NVIDIA stack
+make up-cpu          # full CPU-only stack
+make up-isolated     # full stack with Docker-managed data
+make ps
+make logs
+make restart
+make down
+```
+
+Before submitting changes:
+
+```shell
+make prepare
+```
+
+`prepare` normalizes repository text files, formats shell scripts, runs
+ShellCheck and Hadolint, validates YAML, and validates every Compose mode.
+
+## Platform support
+
+| Host | Supported path |
+| --- | --- |
+| Linux + NVIDIA | Standalone or full stack with GPU |
+| Windows + WSL2 + NVIDIA | Standalone or full stack with GPU |
+| Linux CPU-only | Standalone or `compose.cpu.yaml` |
+| macOS | CPU-only; no NVIDIA passthrough |
+| AMD GPU | No accelerated path is currently packaged |
+
+The container itself is Linux-based and depends on the versioned
+`ghcr.io/jhwohlgemuth/notebook` base-image contract described in
+[`ARCHITECTURE.md`](ARCHITECTURE.md).

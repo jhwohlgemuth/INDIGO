@@ -1,2 +1,5 @@
 .env.secret
 *.log
+
+.indigo/*/*
+!.indigo/*/.gitkeep

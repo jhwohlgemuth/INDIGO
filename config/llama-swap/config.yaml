@@ -1,3 +1,4 @@
+---
 healthCheckTimeout: 500
 logToStdout: "none"
 proxy:
@@ -7,7 +8,7 @@ macros:
   "parallel": "${env.LLAMA_ARG_N_PARALLEL}"
   "models_dir": "${env.MODEL_DIRECTORY}"
 models:
-  "gpt-oss-20b":
+  "__INDIGO_DEFAULT_MODEL__":
     proxy: "http://127.0.0.1:${PORT}"
     cmd: |
       llama-server
@@ -15,7 +16,7 @@ models:
       --batch-size 2048
       --host 0.0.0.0
       --jinja
-      --model ${models_dir}/gpt-oss-20b
+      --model __INDIGO_DEFAULT_MODEL_PATH__
       --port ${PORT}
       --sleep-idle-seconds 600
       --tools all

@@ -32,9 +32,28 @@ graph LR
     MCP --> HostClients
 ```
 
+## Operating modes
+
+The published image and the full Compose deployment deliberately have different
+defaults:
+
+- A direct `docker run` enables inference and the base notebook services. The
+  optional Indigo services remain dormant and are omitted from health checks.
+- `docker compose up` enables all Indigo services and publishes their ports on
+  host loopback. Workspace, model, and router-configuration directories are
+  host-visible under `.indigo/` unless their paths are overridden.
+- `compose.isolated.yaml` replaces those three bind mounts with Docker-managed
+  volumes. `compose.cpu.yaml` removes the NVIDIA GPU reservation. The overrides
+  are composable.
+
+All modes use the same image. `INDIGO_ENABLE_INFERENCE`,
+`INDIGO_ENABLE_FILESYSTEM`, `INDIGO_ENABLE_RUST_ANALYZER`,
+`INDIGO_ENABLE_OPENVIKING`, and `INDIGO_ENABLE_PINOKIO` control the optional
+service processes and their health obligations.
+
 ## Service boundaries
 
-- `indigo` owns the GPU workstation, local inference, agent defaults, shared
+- `indigo` owns the workstation, local inference, agent defaults, shared
   workspace/model volumes, and the s6-supervised OpenViking, Pinokio,
   Filesystem MCP, and Rust Analyzer MCP services.
 - `/etc/services.d/openviking` runs the pinned Python package and owns its
@@ -58,6 +77,11 @@ clients, with OpenCode as Indigo's primary target. Indigo provides
 canonical host MCP templates but does not write host dotfiles. ACORN does not
 currently configure Codex, so Codex remains owned by the shell setup plus its
 Indigo MCP template.
+
+On first start, Indigo renders its bundled `llama-swap` and OpenCode templates
+from `INDIGO_DEFAULT_MODEL` and `INDIGO_DEFAULT_MODEL_PATH`. Existing files are
+never replaced. This lets a direct image run have useful defaults while keeping
+user- or ACORN-managed configuration authoritative.
 
 ## Base-image contract
 
@@ -85,6 +109,10 @@ Pinokio's proxy hides dynamic ports for HTTP/WebSocket apps; it does not turn
 arbitrary TCP/UDP apps into HTTP. Indigo does not publish a general-purpose
 dynamic port range, so exceptional non-HTTP services require an explicit port
 mapping in the main Compose configuration.
+
+Direct-image documentation follows the same loopback-only rule. The standalone
+example publishes only inference; users must opt in to both an optional service
+and its host port.
 
 ## Ownership boundaries
 

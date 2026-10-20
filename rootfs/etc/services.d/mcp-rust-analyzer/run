@@ -2,6 +2,11 @@
 # shellcheck shell=bash
 set -euo pipefail
 
+if [[ ! "${INDIGO_ENABLE_RUST_ANALYZER:-0}" =~ ^(1|true|yes|on)$ ]]; then
+	echo "Indigo Rust Analyzer MCP is disabled"
+	exec sleep infinity
+fi
+
 workspace="${RUST_ANALYZER_WORKSPACE:-${HOME}/dev}"
 port="${MCP_RUST_ANALYZER_PORT:-11003}"
 

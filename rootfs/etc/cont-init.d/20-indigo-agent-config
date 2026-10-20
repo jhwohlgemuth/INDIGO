@@ -2,9 +2,35 @@
 # shellcheck shell=bash
 set -euo pipefail
 
-if [[ "${INDIGO_SEED_AGENT_CONFIG:-true}" != "true" ]]; then
-	exit 0
+model="${INDIGO_DEFAULT_MODEL:-gpt-oss-20b}"
+model_path="${INDIGO_DEFAULT_MODEL_PATH:-${MODEL_DIRECTORY:-${HOME}/.models}/${model}}"
+
+if [[ ! "${model}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+	echo "INDIGO_DEFAULT_MODEL must contain only letters, numbers, dots, underscores, or hyphens" >&2
+	exit 1
 fi
+
+if [[ "${model_path}" == *$'\n'* || "${model_path}" == *'"'* ]]; then
+	echo "INDIGO_DEFAULT_MODEL_PATH must not contain quotes or newlines" >&2
+	exit 1
+fi
+
+render_default() {
+	local source="$1"
+	local target="$2"
+	local mode="$3"
+
+	if [[ -e "${target}" ]]; then
+		return
+	fi
+
+	install -d -m 0755 "$(dirname "${target}")"
+	sed \
+		-e "s|__INDIGO_DEFAULT_MODEL__|${model}|g" \
+		-e "s|__INDIGO_DEFAULT_MODEL_PATH__|${model_path//&/\\&}|g" \
+		"${source}" >"${target}"
+	chmod "${mode}" "${target}"
+}
 
 install_default() {
 	local source="$1"
@@ -19,5 +45,10 @@ install_default() {
 	install -m "${mode}" "${source}" "${target}"
 }
 
-install_default /etc/indigo/defaults/opencode.json "${HOME}/.config/opencode/opencode.json" 0644
-install_default /etc/indigo/defaults/codex.toml "${HOME}/.codex/config.toml" 0600
+render_default /etc/indigo/defaults/llama-swap.yaml \
+	"${INDIGO_LLAMA_SWAP_CONFIG_FILE:-${HOME}/.config/llama-swap/config.yaml}" 0644
+
+if [[ "${INDIGO_SEED_AGENT_CONFIG:-true}" == "true" ]]; then
+	render_default /etc/indigo/defaults/opencode.json "${HOME}/.config/opencode/opencode.json" 0644
+	install_default /etc/indigo/defaults/codex.toml "${HOME}/.codex/config.toml" 0600
+fi

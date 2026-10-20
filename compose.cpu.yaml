@@ -1,0 +1,5 @@
+---
+# Run the full Indigo stack without requesting an NVIDIA GPU.
+services:
+  indigo:
+    gpus: !reset []

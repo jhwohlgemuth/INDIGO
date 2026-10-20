@@ -2,6 +2,11 @@
 # shellcheck shell=bash
 set -euo pipefail
 
+if [[ ! "${INDIGO_ENABLE_PINOKIO:-0}" =~ ^(1|true|yes|on)$ ]]; then
+	echo "Indigo Pinokio is disabled"
+	exec sleep infinity
+fi
+
 export PINOKIO_HOME="${PINOKIO_HOME:-${HOME}/.pinokio}"
 export PINOKIO_DOMAIN="${PINOKIO_DOMAIN:-pinokio.localhost}"
 export PINOKIO_HTTPS_ACTIVE="${PINOKIO_HTTPS_ACTIVE:-1}"

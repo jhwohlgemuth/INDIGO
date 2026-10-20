@@ -6,7 +6,7 @@ x-restart-policy: &restart-policy unless-stopped
 
 services:
   indigo:
-    image: "${REGISTRY:-ghcr.io}/${REGISTRY_PROJECT:-jhwohlgemuth}/${IMAGE:-indigo}:${VERSION:-0.1.0}"
+    image: "${REGISTRY:-ghcr.io}/${REGISTRY_PROJECT:-jhwohlgemuth}/${IMAGE:-indigo}:${VERSION:-0.1.2}"
     build:
       context: .
       args:
@@ -26,7 +26,13 @@ services:
       LLAMA_ARG_N_PARALLEL: "${LLAMA_ARG_N_PARALLEL:-2}"
       MODEL_DIRECTORY: /home/nonroot/.models
       INDIGO_DEFAULT_MODEL: "${INDIGO_DEFAULT_MODEL:-gpt-oss-20b}"
+      INDIGO_DEFAULT_MODEL_PATH: "${INDIGO_DEFAULT_MODEL_PATH:-/home/nonroot/.models/${INDIGO_DEFAULT_MODEL:-gpt-oss-20b}}"
       INDIGO_SEED_AGENT_CONFIG: "${INDIGO_SEED_AGENT_CONFIG:-true}"
+      INDIGO_ENABLE_INFERENCE: "${INDIGO_ENABLE_INFERENCE:-1}"
+      INDIGO_ENABLE_FILESYSTEM: "${INDIGO_ENABLE_FILESYSTEM:-1}"
+      INDIGO_ENABLE_RUST_ANALYZER: "${INDIGO_ENABLE_RUST_ANALYZER:-1}"
+      INDIGO_ENABLE_OPENVIKING: "${INDIGO_ENABLE_OPENVIKING:-1}"
+      INDIGO_ENABLE_PINOKIO: "${INDIGO_ENABLE_PINOKIO:-1}"
       MCP_FILESYSTEM_URL: http://127.0.0.1:11002/mcp
       MCP_FILESYSTEM_PORT: "11002"
       MCP_FILESYSTEM_WORKSPACE: /home/nonroot/dev
@@ -55,8 +61,15 @@ services:
       - "${INDIGO_PUBLISH_HOST:-127.0.0.1}:${MCP_FILESYSTEM_PUBLISHED_PORT:-11002}:11002"
       - "${INDIGO_PUBLISH_HOST:-127.0.0.1}:${MCP_RUST_ANALYZER_PUBLISHED_PORT:-11003}:11003"
     volumes:
-      - workspace:/home/nonroot/dev
-      - models:/home/nonroot/.models
+      - type: bind
+        source: "${INDIGO_WORKSPACE_PATH:-./.indigo/workspace}"
+        target: /home/nonroot/dev
+      - type: bind
+        source: "${INDIGO_MODELS_PATH:-./.indigo/models}"
+        target: /home/nonroot/.models
+      - type: bind
+        source: "${INDIGO_LLAMA_SWAP_CONFIG_PATH:-./.indigo/llama-swap}"
+        target: /home/nonroot/.config/llama-swap
       - opencode-config:/home/nonroot/.config/opencode
       - opencode-data:/home/nonroot/.local/share/opencode
       - codex:/home/nonroot/.codex
@@ -69,8 +82,6 @@ networks:
   indigo:
 
 volumes:
-  workspace:
-  models:
   opencode-config:
   opencode-data:
   codex:
