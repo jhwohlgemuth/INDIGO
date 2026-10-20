@@ -37,18 +37,27 @@ docker run -dit --name indigo --hostname indigo --gpus all --restart unless-stop
 
 That exposes the OpenAI-compatible inference endpoint at
 `http://127.0.0.1:10732/v1`, code-server at `https://127.0.0.1:1337`, Verdaccio
-at `4873`, and Jupyter at `13337`. Pinokio (`42000`, `42080`), OpenViking
-(`1933`), Marimo (`13338`), and the MCP servers (`11002`, `11003`) run in the
-container but are not published here, and the workspace, OpenViking state,
-Pinokio installations, Codex, and cargo cache are not mounted, so they do not
-survive `docker rm`.
+at `4873`, and Jupyter at `13337`. Marimo (`13338`) starts with the image but
+is not published. Pinokio, OpenViking, and the MCP servers stay off unless you
+set `INDIGO_ENABLE_PINOKIO`, `INDIGO_ENABLE_OPENVIKING`,
+`INDIGO_ENABLE_FILESYSTEM`, and `INDIGO_ENABLE_RUST_ANALYZER`. The workspace,
+OpenViking state, Pinokio installations, Codex, and cargo cache are not
+mounted, so they do not survive `docker rm`.
 
 `-i -t` is required. The image's default command is an interactive `zsh`, which
 exits immediately without a TTY; combined with `--restart unless-stopped` that
 becomes an endless restart loop that reprints every service's startup logs.
 
 `--gpus all` needs the NVIDIA container toolkit installed on the Docker host.
-Without it the container cannot start, even when a GPU is present.
+Without it the container cannot start, even when a GPU is present. On a
+CPU-only host, omit `--gpus all`. macOS runs this image through Docker's Linux
+virtual machine and has no NVIDIA passthrough.
+
+To select a model other than `gpt-oss-20b`, set `INDIGO_DEFAULT_MODEL` to a
+name made of letters, numbers, dots, underscores, and hyphens, and set
+`INDIGO_DEFAULT_MODEL_PATH` to its path inside the container. Indigo writes
+the initial llama-swap and OpenCode configuration from those values and does
+not replace files that already exist.
 
 To tear it down:
 
@@ -69,9 +78,10 @@ make rm
 ```
 
 To try the image with nothing configured at all, `make start` runs it with no
-published ports, no volumes, and no `.env` edits. The image's own defaults
-apply and the services are reachable inside the container only, which is enough
-to attach a shell or exercise the image:
+published ports, no volumes, and no `.env` edits. Inference and the notebook
+services use the image defaults and are reachable inside the container only.
+Optional Indigo services stay off. That is enough to attach a shell or
+exercise the image:
 
 ```shell
 make start
@@ -80,21 +90,21 @@ make stop
 ```
 
 A fully published variant with host bind mounts instead of named volumes is
-also available. It exposes every service and keeps the workspace, models,
-OpenViking state, Pinokio installations, and agent state directly accessible
-from the host. Create any missing host directories first. Its ports match `make
-run`; only the volume sources differ.
+also available. It exposes every service, turns the optional Indigo services
+on, and keeps the workspace, models, OpenViking state, Pinokio installations,
+and agent state directly accessible from the host. Create any missing host
+directories first. Its ports match `make run`; only the volume sources differ.
 
 Windows PowerShell:
 
 ```powershell
-docker run -dit --name indigo --hostname indigo --gpus all --restart unless-stopped --shm-size 2gb -p 127.0.0.1:10732:10732 -p 127.0.0.1:1337:1337 -p 127.0.0.1:4873:4873 -p 127.0.0.1:13337:13337 -p 127.0.0.1:13338:13338 -p 127.0.0.1:1933:1933 -p 127.0.0.1:42000:42000 -p 127.0.0.1:42080:8080 -p 127.0.0.1:11002:11002 -p 127.0.0.1:11003:11003 --volume "${HOME}\dev:/home/nonroot/dev" --volume "${HOME}\.models:/home/nonroot/.models" --volume "${HOME}\.openviking:/home/nonroot/.openviking" --volume "${HOME}\.pinokio:/home/nonroot/.pinokio" --volume "${HOME}\.config/opencode:/home/nonroot/.config/opencode" --volume "${HOME}\.local/share/opencode:/home/nonroot/.local/share/opencode" --volume "${HOME}\.codex:/home/nonroot/.codex" --volume "${HOME}\.cargo:/home/nonroot/.cargo" ghcr.io/jhwohlgemuth/indigo:0.1.4
+docker run -dit --name indigo --hostname indigo --gpus all --restart unless-stopped --shm-size 2gb -e INDIGO_ENABLE_FILESYSTEM=1 -e INDIGO_ENABLE_RUST_ANALYZER=1 -e INDIGO_ENABLE_OPENVIKING=1 -e INDIGO_ENABLE_PINOKIO=1 -p 127.0.0.1:10732:10732 -p 127.0.0.1:1337:1337 -p 127.0.0.1:4873:4873 -p 127.0.0.1:13337:13337 -p 127.0.0.1:13338:13338 -p 127.0.0.1:1933:1933 -p 127.0.0.1:42000:42000 -p 127.0.0.1:42080:8080 -p 127.0.0.1:11002:11002 -p 127.0.0.1:11003:11003 --volume "${HOME}\dev:/home/nonroot/dev" --volume "${HOME}\.models:/home/nonroot/.models" --volume "${HOME}\.openviking:/home/nonroot/.openviking" --volume "${HOME}\.pinokio:/home/nonroot/.pinokio" --volume "${HOME}\.config/opencode:/home/nonroot/.config/opencode" --volume "${HOME}\.local/share/opencode:/home/nonroot/.local/share/opencode" --volume "${HOME}\.codex:/home/nonroot/.codex" --volume "${HOME}\.cargo:/home/nonroot/.cargo" ghcr.io/jhwohlgemuth/indigo:0.1.4
 ```
 
 Linux or macOS:
 
 ```shell
-docker run -dit --name indigo --hostname indigo --gpus all --restart unless-stopped --shm-size 2gb -p 127.0.0.1:10732:10732 -p 127.0.0.1:1337:1337 -p 127.0.0.1:4873:4873 -p 127.0.0.1:13337:13337 -p 127.0.0.1:13338:13338 -p 127.0.0.1:1933:1933 -p 127.0.0.1:42000:42000 -p 127.0.0.1:42080:8080 -p 127.0.0.1:11002:11002 -p 127.0.0.1:11003:11003 --volume "$HOME/dev:/home/nonroot/dev" --volume "$HOME/.models:/home/nonroot/.models" --volume "$HOME/.openviking:/home/nonroot/.openviking" --volume "$HOME/.pinokio:/home/nonroot/.pinokio" --volume "$HOME/.config/opencode:/home/nonroot/.config/opencode" --volume "$HOME/.local/share/opencode:/home/nonroot/.local/share/opencode" --volume "$HOME/.codex:/home/nonroot/.codex" --volume "$HOME/.cargo:/home/nonroot/.cargo" ghcr.io/jhwohlgemuth/indigo:0.1.4
+docker run -dit --name indigo --hostname indigo --gpus all --restart unless-stopped --shm-size 2gb -e INDIGO_ENABLE_FILESYSTEM=1 -e INDIGO_ENABLE_RUST_ANALYZER=1 -e INDIGO_ENABLE_OPENVIKING=1 -e INDIGO_ENABLE_PINOKIO=1 -p 127.0.0.1:10732:10732 -p 127.0.0.1:1337:1337 -p 127.0.0.1:4873:4873 -p 127.0.0.1:13337:13337 -p 127.0.0.1:13338:13338 -p 127.0.0.1:1933:1933 -p 127.0.0.1:42000:42000 -p 127.0.0.1:42080:8080 -p 127.0.0.1:11002:11002 -p 127.0.0.1:11003:11003 --volume "$HOME/dev:/home/nonroot/dev" --volume "$HOME/.models:/home/nonroot/.models" --volume "$HOME/.openviking:/home/nonroot/.openviking" --volume "$HOME/.pinokio:/home/nonroot/.pinokio" --volume "$HOME/.config/opencode:/home/nonroot/.config/opencode" --volume "$HOME/.local/share/opencode:/home/nonroot/.local/share/opencode" --volume "$HOME/.codex:/home/nonroot/.codex" --volume "$HOME/.cargo:/home/nonroot/.cargo" ghcr.io/jhwohlgemuth/indigo:0.1.4
 ```
 
 Equivalent Make shortcuts are available for routine stack operations:
@@ -102,6 +112,8 @@ Equivalent Make shortcuts are available for routine stack operations:
 ```shell
 make compose-build
 make up
+make up-cpu
+make up-isolated
 make ps
 make logs
 make restart
@@ -122,13 +134,41 @@ are s6 services in that container.
 
 ## Compose
 
-Compose is the build-from-source path. It builds the image locally, seeds the
-agent configuration, and keeps state in Docker-managed volumes:
+Compose is the build-from-source path. It builds the image locally, turns the
+optional Indigo services on, and seeds agent configuration. Workspace, models,
+and the llama-swap configuration are bind-mounted from `.indigo/` so they stay
+visible on the host. OpenCode, Codex, OpenViking, Pinokio, and the Cargo cache
+remain in Docker-managed volumes:
 
 ```shell
 docker compose up --build --detach
 docker compose ps
 ```
+
+The host-visible directories are:
+
+- `.indigo/workspace` — code visible to Indigo and its MCP servers
+- `.indigo/models` — local model files
+- `.indigo/llama-swap` — generated or user-maintained router configuration
+
+To use existing host directories instead, set `INDIGO_WORKSPACE_PATH`,
+`INDIGO_MODELS_PATH`, and optionally `INDIGO_LLAMA_SWAP_CONFIG_PATH` before
+starting Compose.
+
+For a completely Docker-managed deployment with no host bind mounts:
+
+```shell
+docker compose -f compose.yaml -f compose.isolated.yaml up --build --detach
+```
+
+For a CPU-only full deployment, omit the GPU reservation:
+
+```shell
+docker compose -f compose.yaml -f compose.cpu.yaml up --build --detach
+```
+
+The two overrides can be combined. `make up-isolated` and `make up-cpu` run
+the same commands.
 
 `.env` is the single source of truth for both Compose and `make run`. It holds
 the image tag, the instance identity, and every published host port, so a port
@@ -151,9 +191,11 @@ make check-env ENV_FILE=.env.two
 ## Multiple instances
 
 `scripts/new.sh` copies `.env` into a per-instance file with every
-published port incremented, its own Compose project name, its own hostname, and
-its own Pinokio domain. Named volumes are namespaced by project name, so
-instances do not share state:
+published port incremented, its own Compose project name, its own hostname,
+its own Pinokio domain, and its own bind-mount paths under `.indigo/<name>/`.
+Named volumes are namespaced by project name, so instances do not share state.
+Point `INDIGO_MODELS_PATH` at a shared directory if two instances should use
+the same model files:
 
 ```shell
 scripts/new.sh two            # writes .env.two with +1 on every port
@@ -194,7 +236,9 @@ make prepare
 ShellCheck, Compose, workflow, and configuration YAML files, then applies
 `shfmt` to shell scripts. `make check` runs `shfmt --diff`, ShellCheck, and
 `scripts/check.sh` against `.env` or the selected `ENV_FILE`, so a broken
-environment fails before an image build starts.
+environment fails before an image build starts. `make lint`, which `prepare`
+also runs, validates `compose.yaml` together with `compose.cpu.yaml` and
+`compose.isolated.yaml`.
 
 OpenViking waits for a valid configuration on first use. Initialize it,
 validate the selected local or remote embedding/VLM providers, and restart:
@@ -325,8 +369,24 @@ images through `OPENVIKING_CONF_CONTENT`.
 
 ## Persistent data
 
-Compose volumes retain the workspace, models, OpenCode state, Codex state,
-OpenViking data at `~/.openviking`, Pinokio installations at `~/.pinokio`,
-and Cargo cache for Rust Analyzer. Indigo expects models beneath
+Compose bind-mounts the workspace, models, and llama-swap configuration from
+`.indigo/` unless `compose.isolated.yaml` replaces those three mounts with
+Docker-managed volumes. OpenCode state, Codex state, OpenViking data at
+`~/.openviking`, Pinokio installations at `~/.pinokio`, and the Cargo cache
+stay in named volumes either way. Indigo expects models beneath
 `/home/nonroot/.models`; ACORN remains responsible for model acquisition and
 generated `llama-swap` entries.
+
+## Platform support
+
+| Host | Supported path |
+| --- | --- |
+| Linux + NVIDIA | Standalone or full stack with GPU |
+| Windows + WSL2 + NVIDIA | Standalone or full stack with GPU |
+| Linux CPU-only | Standalone without `--gpus all`, or `compose.cpu.yaml` |
+| macOS | CPU-only; no NVIDIA passthrough |
+| AMD GPU | No accelerated path is currently packaged |
+
+The container itself is Linux-based and depends on the versioned
+`ghcr.io/jhwohlgemuth/notebook` base-image contract described in
+[`ARCHITECTURE.md`](ARCHITECTURE.md).

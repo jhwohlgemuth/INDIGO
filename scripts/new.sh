@@ -2,8 +2,8 @@
 # shellcheck shell=bash
 #
 # Create an additional Indigo Compose environment from the base .env file with
-# every published port incremented, so a second instance can run beside the
-# first without editing compose.yaml by hand.
+# every published port incremented and separate host bind mounts, so a second
+# instance can run beside the first without editing compose.yaml by hand.
 #
 # Usage: scripts/new.sh <name> [offset] [--force]
 set -euo pipefail
@@ -136,7 +136,7 @@ if command -v lsof > /dev/null 2>&1; then
     done
 fi
 
-override_keys="COMPOSE_PROJECT_NAME|INDIGO_HOSTNAME|PINOKIO_DOMAIN"
+override_keys="COMPOSE_PROJECT_NAME|INDIGO_HOSTNAME|PINOKIO_DOMAIN|INDIGO_WORKSPACE_PATH|INDIGO_MODELS_PATH|INDIGO_LLAMA_SWAP_CONFIG_PATH"
 for key in "${port_keys[@]}"; do
     override_keys="${override_keys}|${key}"
 done
@@ -149,6 +149,9 @@ done
     printf 'COMPOSE_PROJECT_NAME=indigo-%s\n' "${name}"
     printf 'INDIGO_HOSTNAME=indigo-%s\n' "${name}"
     printf 'PINOKIO_DOMAIN=%s.pinokio.localhost\n' "${name}"
+    printf 'INDIGO_WORKSPACE_PATH=./.indigo/%s/workspace\n' "${name}"
+    printf 'INDIGO_MODELS_PATH=./.indigo/%s/models\n' "${name}"
+    printf 'INDIGO_LLAMA_SWAP_CONFIG_PATH=./.indigo/%s/llama-swap\n' "${name}"
     for index in "${!port_keys[@]}"; do
         printf '%s=%s\n' "${port_keys[${index}]}" "${new_ports[${index}]}"
     done
@@ -161,6 +164,9 @@ echo "wrote ${env_file}"
 for index in "${!port_keys[@]}"; do
     printf '  %-30s %5s -> %5s\n' "${port_keys[${index}]}" "${base_ports[${index}]}" "${new_ports[${index}]}"
 done
+printf '  %-34s %s\n' "INDIGO_WORKSPACE_PATH" "./.indigo/${name}/workspace"
+printf '  %-34s %s\n' "INDIGO_MODELS_PATH" "./.indigo/${name}/models"
+printf '  %-34s %s\n' "INDIGO_LLAMA_SWAP_CONFIG_PATH" "./.indigo/${name}/llama-swap"
 echo
 echo "  docker compose --env-file ${env_file} -p indigo-${name} up --detach"
 

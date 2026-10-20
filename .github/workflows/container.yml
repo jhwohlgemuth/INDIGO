@@ -1,5 +1,7 @@
+---
 name: Container
 
+# yamllint disable-line rule:truthy
 on:
   pull_request:
   push:
@@ -26,3 +28,29 @@ jobs:
         run: make check
       - name: Build image
         run: make build
+      - name: Smoke test image contents
+        run: make image-smoke
+
+  windows-config:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose modes
+        shell: pwsh
+        run: |
+          docker compose config --quiet
+          docker compose -f compose.yaml -f compose.cpu.yaml config --quiet
+          docker compose -f compose.yaml -f compose.isolated.yaml config --quiet
+          docker compose -f compose.yaml -f compose.cpu.yaml `
+            -f compose.isolated.yaml config --quiet
+          $cpu = docker compose -f compose.yaml -f compose.cpu.yaml config
+          if ($cpu -match '(?m)^    gpus:') {
+            throw 'CPU mode still contains a GPU reservation'
+          }
+          $isolated = docker compose -f compose.yaml `
+            -f compose.isolated.yaml config
+          if ($isolated -match '(?m)^      - type: bind$') {
+            throw 'Isolated mode still contains a host bind mount'
+          }
+      - name: Verify checkout line endings
+        run: git diff --exit-code

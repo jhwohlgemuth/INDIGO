@@ -10,13 +10,13 @@ ifneq ($(ENV_FILE),)
 include $(ENV_FILE)
 endif
 
-.PHONY: prepare format check check-env lint build push compose-build up down restart logs ps filesystem rust instance start run stop rm exec
+.PHONY: prepare format check check-env lint build image-smoke push compose-build up up-cpu up-isolated down restart logs ps filesystem rust instance start run stop rm exec
 
 COMPOSE ?= docker compose
 COMPOSE_ARGS ?= -f ./compose.yaml $(if $(ENV_FILE),--env-file $(ENV_FILE),)
 DOCKER_FILES := ./Dockerfile $(wildcard ./containers/*/Dockerfile)
 SHELL_FILES := $(wildcard ./scripts/*.sh) $(wildcard ./rootfs/etc/cont-init.d/*) $(wildcard ./rootfs/etc/services.d/*/*) $(wildcard ./rootfs/opt/*/bin/*)
-YAML_FILES := $(wildcard ./config/*/*.yaml) $(wildcard ./.github/workflows/*.yml ./.github/workflows/*.yaml) ./compose.yaml
+YAML_FILES := $(wildcard ./config/*/*.yaml) $(wildcard ./.github/workflows/*.yml ./.github/workflows/*.yaml) $(wildcard ./compose*.yaml)
 FORMAT_FILES := ./.shellcheckrc $(SHELL_FILES) $(YAML_FILES)
 
 CONTAINER ?= $(INDIGO_HOSTNAME)
@@ -39,14 +39,23 @@ check-env:
 
 lint:
 	@hadolint $(DOCKER_FILES)
-	@yamllint ./config ./rootfs ./.github ./compose.yaml
+	@yamllint $(YAML_FILES)
 	@$(COMPOSE) $(COMPOSE_ARGS) config --quiet
+	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.cpu.yaml config --quiet
+	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.isolated.yaml config --quiet
+	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.cpu.yaml -f ./compose.isolated.yaml config --quiet
 
 compose-build:
 	@$(COMPOSE) $(COMPOSE_ARGS) build
 
 up:
 	@$(COMPOSE) $(COMPOSE_ARGS) up --detach
+
+up-cpu:
+	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.cpu.yaml up --detach
+
+up-isolated:
+	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.isolated.yaml up --detach
 
 down:
 	@$(COMPOSE) $(COMPOSE_ARGS) down
@@ -61,17 +70,20 @@ ps:
 	@$(COMPOSE) $(COMPOSE_ARGS) ps
 
 filesystem:
+	@echo "Filesystem MCP is part of the full Indigo stack; starting Indigo."
 	@$(COMPOSE) $(COMPOSE_ARGS) up --detach --build indigo
 
 rust:
+	@echo "Rust Analyzer MCP is part of the full Indigo stack; starting Indigo."
 	@$(COMPOSE) $(COMPOSE_ARGS) up --detach --build indigo
 
 instance:
 	@./scripts/new.sh $(NAME) $(OFFSET) $(FORCE)
 
 # Start the published image with nothing configured: no published ports, no
-# volumes, no .env edits. The image's own defaults apply and the services are
-# reachable inside the container only. Use run for host publishing.
+# volumes, no .env edits. Inference and the notebook services use the image
+# defaults and are reachable inside the container only. Optional Indigo
+# services stay off. Use run for host publishing.
 start:
 	@docker run \
 		--detach \
@@ -85,7 +97,8 @@ start:
 		"$(IMAGE_REF)"
 
 # Run the published image without Compose or this repository, publishing the
-# ports and mounting the volumes declared in .env. --interactive and --tty are
+# ports and mounting the volumes declared in .env. Optional Indigo services are
+# enabled so the published ports have listeners. --interactive and --tty are
 # required: the image's default command is an interactive zsh, which exits at
 # once without a TTY and turns the container into a restart loop.
 run:
@@ -98,6 +111,11 @@ run:
 		--gpus all \
 		--restart unless-stopped \
 		--shm-size "$(INDIGO_SHM_SIZE)" \
+		--env INDIGO_ENABLE_FILESYSTEM=1 \
+		--env INDIGO_ENABLE_RUST_ANALYZER=1 \
+		--env INDIGO_ENABLE_OPENVIKING=1 \
+		--env INDIGO_ENABLE_PINOKIO=1 \
+		--env PINOKIO_DOMAIN="$(PINOKIO_DOMAIN)" \
 		--publish "$(INDIGO_PUBLISH_HOST):$(INFERENCE_PUBLISHED_PORT):10732" \
 		--publish "$(INDIGO_PUBLISH_HOST):$(CODE_SERVER_PUBLISHED_PORT):1337" \
 		--publish "$(INDIGO_PUBLISH_HOST):$(VERDACCIO_PUBLISHED_PORT):4873" \
@@ -133,6 +151,10 @@ build:
 		--tag "${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:${VERSION}" \
 		--tag "${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:latest" \
 		.
+
+image-smoke:
+	@docker run --rm --entrypoint /bin/bash "${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:${VERSION}" \
+		-lc 'test -x /healthcheck && command -v llama-swap && command -v llama-server && test -r /etc/indigo/defaults/llama-swap.yaml'
 
 push:
 	@docker push "${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:${VERSION}"

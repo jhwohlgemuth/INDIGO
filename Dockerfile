@@ -84,6 +84,11 @@ ENV PINOKIO_DOMAIN=pinokio.localhost
 ENV PINOKIO_HTTPS_ACTIVE=1
 ENV PINOKIO_NETWORK_ACTIVE=1
 ENV PINOKIO_SYSTEM_CADDY=1
+ENV INDIGO_ENABLE_INFERENCE=1
+ENV INDIGO_ENABLE_FILESYSTEM=0
+ENV INDIGO_ENABLE_RUST_ANALYZER=0
+ENV INDIGO_ENABLE_OPENVIKING=0
+ENV INDIGO_ENABLE_PINOKIO=0
 ENV CARGO_HOME="${HOME}/.cargo"
 ENV RUSTUP_HOME=/usr/local/rustup
 ENV PATH="/usr/local/cargo/bin:/opt/mcp/node/bin:/opt/openviking/bin:/opt/pinokio/bin:/opt/pinokio/node/bin:${PATH}"
@@ -100,7 +105,7 @@ COPY --from=mcp-node /usr/local /opt/mcp/node
 COPY --from=rust-toolchain /usr/local/cargo /usr/local/cargo
 COPY --from=rust-toolchain /usr/local/rustup /usr/local/rustup
 COPY --chmod=0755 ./rootfs/opt/pinokio/bin/conda /opt/pinokio/bin/conda
-COPY --chmod=0644 --chown=${USER_NAME}:${USER_NAME} ./config/llama-swap/config.yaml "${HOME}/.config/llama-swap/config.yaml"
+COPY --chmod=0644 ./config/llama-swap/config.yaml /etc/indigo/defaults/llama-swap.yaml
 COPY --chmod=0644 ./config/agents/opencode.json /etc/indigo/defaults/opencode.json
 COPY --chmod=0644 ./config/agents/codex.toml /etc/indigo/defaults/codex.toml
 COPY --chmod=0755 ./scripts/healthcheck.sh /healthcheck
@@ -145,7 +150,8 @@ RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
 USER root
 RUN find /etc/services.d /etc/cont-init.d -type f -exec sed -i 's/\r$//' {} + \
     && sed -i 's/\r$//' /healthcheck /opt/pinokio/bin/conda
-RUN cleanup
+RUN cleanup \
+    && chmod 0755 /etc/indigo /etc/indigo/defaults
 #
 # %runscript
 #

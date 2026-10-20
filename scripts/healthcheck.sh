@@ -34,15 +34,25 @@ check "code-server" "https://${host}:${code_server_port}" --insecure
 check "verdaccio" "https://${host}:${verdaccio_port}" --insecure
 check "jupyter" "https://${host}:${jupyter_port}" --insecure
 check "marimo" "http://${host}:${marimo_port}"
-check "inference-router" "http://${host}:${inference_port}${inference_path}"
-check "filesystem-mcp" "http://${host}:${mcp_filesystem_port}/healthz"
-check "rust-analyzer-mcp" "http://${host}:${mcp_rust_analyzer_port}/healthz"
-if [[ -s "${openviking_config}" ]]; then
-    check "openviking" "http://${host}:${openviking_port}${openviking_health_path}"
-else
-    echo "WAIT: openviking (${openviking_config} is not configured)"
+if [[ "${INDIGO_ENABLE_INFERENCE:-1}" =~ ^(1|true|yes|on)$ ]]; then
+    check "inference-router" "http://${host}:${inference_port}${inference_path}"
 fi
-check "pinokio" "http://${host}:${pinokio_port}/"
-check "pinokio-proxy" "http://${host}:${pinokio_proxy_port}/" --header "Host: ${pinokio_domain}"
+if [[ "${INDIGO_ENABLE_FILESYSTEM:-0}" =~ ^(1|true|yes|on)$ ]]; then
+    check "filesystem-mcp" "http://${host}:${mcp_filesystem_port}/healthz"
+fi
+if [[ "${INDIGO_ENABLE_RUST_ANALYZER:-0}" =~ ^(1|true|yes|on)$ ]]; then
+    check "rust-analyzer-mcp" "http://${host}:${mcp_rust_analyzer_port}/healthz"
+fi
+if [[ "${INDIGO_ENABLE_OPENVIKING:-0}" =~ ^(1|true|yes|on)$ ]]; then
+    if [[ -s "${openviking_config}" ]]; then
+        check "openviking" "http://${host}:${openviking_port}${openviking_health_path}"
+    else
+        echo "WAIT: openviking (${openviking_config} is not configured)"
+    fi
+fi
+if [[ "${INDIGO_ENABLE_PINOKIO:-0}" =~ ^(1|true|yes|on)$ ]]; then
+    check "pinokio" "http://${host}:${pinokio_port}/"
+    check "pinokio-proxy" "http://${host}:${pinokio_proxy_port}/" --header "Host: ${pinokio_domain}"
+fi
 
 exit "${status}"

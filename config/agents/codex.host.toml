@@ -1,0 +1,10 @@
+# Canonical host-side MCP endpoints for a full Indigo deployment.
+
+[mcp_servers.filesystem]
+url = "http://127.0.0.1:11002/mcp"
+
+[mcp_servers.rust_analyzer]
+url = "http://127.0.0.1:11003/mcp"
+
+[mcp_servers.openviking]
+url = "http://127.0.0.1:1933/mcp"

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "filesystem": {
+      "type": "remote",
+      "url": "http://127.0.0.1:11002/mcp",
+      "enabled": true
+    },
+    "rust-analyzer": {
+      "type": "remote",
+      "url": "http://127.0.0.1:11003/mcp",
+      "enabled": true
+    },
+    "openviking": {
+      "type": "remote",
+      "url": "http://127.0.0.1:1933/mcp",
+      "enabled": true
+    }
+  }
+}

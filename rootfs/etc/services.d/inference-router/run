@@ -2,11 +2,17 @@
 # shellcheck shell=bash
 set -euo pipefail
 
+if [[ ! "${INDIGO_ENABLE_INFERENCE:-1}" =~ ^(1|true|yes|on)$ ]]; then
+	echo "Indigo inference is disabled"
+	exec sleep infinity
+fi
+
 host="${LLAMA_ARG_HOST:-0.0.0.0}"
 port="${LLAMA_ARG_PORT:-10732}"
+config_file="${INDIGO_LLAMA_SWAP_CONFIG_FILE:-${HOME}/.config/llama-swap/config.yaml}"
 
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 exec llama-swap \
-	--config "${HOME}/.config/llama-swap/config.yaml" \
+	--config "${config_file}" \
 	--listen "${host}:${port}" \
 	--watch-config

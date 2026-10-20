@@ -18,6 +18,12 @@ code:
   - path: ./compose.yaml
     description: Local deployment topology, ports, persistent volumes, and runtime configuration.
     license: MIT
+  - path: ./compose.cpu.yaml
+    description: CPU-only override for hosts without NVIDIA container support.
+    license: MIT
+  - path: ./compose.isolated.yaml
+    description: Docker-managed storage override for an isolated deployment.
+    license: MIT
   - path: ./.env
     description: Version and image-build defaults for the Compose deployment.
     license: MIT

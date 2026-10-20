@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "indigo/gpt-oss-20b",
+  "model": "indigo/__INDIGO_DEFAULT_MODEL__",
   "provider": {
     "indigo": {
       "npm": "@ai-sdk/openai-compatible",
@@ -9,8 +9,8 @@
         "baseURL": "http://127.0.0.1:10732/v1"
       },
       "models": {
-        "gpt-oss-20b": {
-          "name": "GPT-OSS 20B (local)"
+        "__INDIGO_DEFAULT_MODEL__": {
+          "name": "__INDIGO_DEFAULT_MODEL__ (local)"
         }
       }
     }

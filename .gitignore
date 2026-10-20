@@ -2,3 +2,6 @@
 .env.*
 !/.env
 *.log
+
+.indigo/*/*
+!.indigo/*/.gitkeep
