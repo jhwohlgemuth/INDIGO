@@ -15,11 +15,11 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Reviewed 2026-10-22 against commit ea5c9f7cb7734f1bee302e22bfd8035a8e851fc4. `compose.yaml:49` sets OpenViking to container loopback while publishing port 1933. `README.md` advertises a host endpoint; Docker port publishing normally targets the container network interface, not its loopback. The service rejects dev authentication on non-loopback addresses according to the current service wrapper. Compose hard-codes the host instead of interpolating an override.
+Rechecked 2026-10-22 at commit db2c536517837492b31007cf86688ec6b7e23fa3 with local changes. `compose.yaml:49` sets OpenViking to container loopback while publishing port 1933. `README.md` and `ARCHITECTURE.md` now explain that default host publishing cannot reach this listener and host access needs a separate authenticated override. The service rejects dev authentication on non-loopback addresses. The pinned OpenViking 0.4.17 [authentication guide](https://github.com/volcengine/OpenViking/blob/v0.4.17/docs/en/guides/04-authentication.md) specifies `server.auth_mode: api_key`, a nonempty `server.root_api_key`, and a user key for data APIs.
 
 ## Boundaries and decisions
 
-Keep dev mode container-local. Provide a separate opt-in host-access override using upstream API-key authentication; retain host-loopback publishing. Do not silently widen every service's bind address. This is remaining work, not an implementation claim. Docker runtime behavior and performance were not verified during this review because daemon access was denied.
+Keep dev mode container-local. Provide a separate Compose override that binds only OpenViking to the container network interface, keeps host publishing on loopback, and mounts a private `ov.conf` read-only. The service wrapper must refuse a non-loopback bind unless the config explicitly selects `api_key` with a nonempty root key. Use a disposable tenant user key to validate data access; `/health` alone is not an auth test. No Docker daemon was available for runtime verification.
 
 ## Dependencies
 
@@ -35,25 +35,14 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 # Execution phases
 
-## NET-01 — Define a truthful default access contract
-
-- Status: ready
-- Budget: 5 active hours maximum
-- Prerequisites: none
-- Exact write set: `README.md`, `ARCHITECTURE.md`
-- Primary integration lock: runtime-docs
-- Outcome: Document container-local dev access and the authentication requirement.
-- Focused validation: Compare endpoint tables and commands against Compose and the OpenViking wrapper; verify no default host-access promise remains.
-- Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
-
 ## NET-02 — Add authenticated host-access mode
 
-- Status: planned
+- Status: blocked
 - Budget: 5 active hours maximum
-- Prerequisites: NET-01; accessible Docker host and supported OpenViking auth configuration fixture
-- Exact write set: `compose.openviking-host.yaml`, `scripts/check-openviking-auth.sh`, `tests/openviking-auth.sh`, `README.md`
+- Prerequisites: accessible Docker host and disposable OpenViking 0.4.17 config with root and tenant user keys
+- Exact write set: `compose.openviking-host.yaml`, `rootfs/etc/services.d/openviking/run`, `tests/openviking-auth.sh`, `README.md`
 - Primary integration lock: openviking-access
-- Outcome: Use a mounted private configuration and fail closed before exposing the listener.
-- Focused validation: Render default and override Compose; on a disposable configured container test host /health and protected API calls with absent, invalid, and valid keys; verify logs do not disclose keys.
+- Outcome: Require `OPENVIKING_AUTH_CONFIG_PATH` for a read-only config mount, set `OPENVIKING_SERVER_HOST=0.0.0.0` only in the override, and fail closed on missing or invalid authentication configuration.
+- Focused validation: Render default and override Compose; verify the default host route cannot connect. On a disposable configured container, test host `/health` and a protected data API with absent, invalid, and tenant user keys; verify logs do not disclose keys.
 - Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
 

@@ -15,11 +15,11 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Reviewed 2026-10-22 against commit ea5c9f7cb7734f1bee302e22bfd8035a8e851fc4. `compose.cpu.yaml` only removes the GPU reservation. The image still installs a CUDA toolkit and builds the CUDA backend. CI runs on Ubuntu and renders Compose on Windows but provides no architecture or macOS runtime evidence. README's macOS row does not distinguish Apple Silicon from Intel. `make start` and `make run` always request GPUs.
+Rechecked 2026-10-22 at commit db2c536517837492b31007cf86688ec6b7e23fa3 with local changes. `make start GPU=0` and `make run GPU=0` now omit `--gpus all`; `tests/run-platform.sh` checks both modes. `docs/platform-support.md` distinguishes configuration and build evidence from runtime validation by host and architecture. `compose.cpu.yaml` only removes the GPU reservation. The image still installs a CUDA toolkit and builds the CUDA backend, so a CPU inference path remains unverified.
 
 ## Boundaries and decisions
 
-First document tested support versus unverified emulation. Keep native ARM64 as a separate future decision; this plan does not promise an ARM64 port or new GPU backend. This is remaining work, not an implementation claim. Docker runtime behavior and performance were not verified during this review because daemon access was denied.
+Use `GPU=0` as the standalone Make interface for omitting `--gpus all`; keep GPU mode as the default. Document tested host/architecture combinations separately from unverified emulation. Build an opt-in CPU image target without installing CUDA, while preserving the default GPU image target. Native ARM64 and new GPU backends remain separate future decisions. No Docker daemon was available for CPU inference verification.
 
 ## Dependencies
 
@@ -35,25 +35,14 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 # Execution phases
 
-## PLT-01 — State and support the current CPU launch contract
-
-- Status: ready
-- Budget: 5 active hours maximum
-- Prerequisites: none
-- Exact write set: `Makefile`, `README.md`, `docs/platform-support.md`, `tests/run-platform.sh`
-- Primary integration lock: standalone-launch
-- Outcome: Add an explicit CPU option to standalone Make targets and document shell/Compose prerequisites.
-- Focused validation: Inspect CPU/GPU docker argument variants; verify empty GPU option works; distinguish native versus emulated architecture in the support table.
-- Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
-
 ## PLT-02 — Separate CPU inference build and runtime dependencies
 
-- Status: planned
+- Status: blocked
 - Budget: 5 active hours maximum
 - Prerequisites: REP-01; provisioned builder and approved CPU model fixture
 - Exact write set: `Dockerfile`, `scripts/build_llama_cpp_from_source.sh`, `compose.cpu-build.yaml`, `docs/platform-support.md`
 - Primary integration lock: image-build
-- Outcome: Provide an opt-in CPU image target while preserving GPU behavior.
+- Outcome: Split common runtime setup from GPU and CPU targets, keep the GPU target as the default, and make `compose.cpu-build.yaml` select the CPU target together with `compose.cpu.yaml`.
 - Focused validation: Build the CPU target and inspect dependencies for CUDA requirements; serve the approved small model on a CPU-only Docker host; compare artifact size.
 - Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
 

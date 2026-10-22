@@ -68,7 +68,9 @@ service processes and their health obligations.
   (`--profile formal`).
 
 Indigo-local clients reach the integrated MCPs over container loopback. Host
-clients use the same port numbers through Compose's published loopback ports.
+clients use Compose's published loopback ports for the MCP services with
+network-facing listeners. OpenViking binds container loopback by default, so
+its published port does not provide host access.
 
 Host configuration has two owners. `jhwohlgemuth/my-shell-setup` installs the
 host tools and distributes base OpenCode/Codex configuration, including MCP
@@ -116,7 +118,9 @@ that inference works; only a loaded model is.
 ## Networking and trust boundary
 
 Published services bind to host loopback by default. Changing
-`INDIGO_PUBLISH_HOST` widens the trust boundary for every listed port. MCP
+`INDIGO_PUBLISH_HOST` widens the trust boundary for reachable ports. OpenViking
+stays on container loopback until a separate authenticated override changes its
+listener. MCP
 servers and Pinokio scripts can perform powerful actions, so LAN or internet
 exposure requires authentication, TLS, and per-service authorization outside
 this development-oriented Compose stack.

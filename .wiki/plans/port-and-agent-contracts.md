@@ -15,7 +15,7 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Reviewed 2026-10-22 against commit ea5c9f7cb7734f1bee302e22bfd8035a8e851fc4. Compose allows LLAMA_ARG_PORT to vary, but its published target stays 10732 and bundled OpenCode baseURL stays 10732. Router YAML also contains 10732. Direct-image optional services default off while OpenCode MCP entries default enabled. Make run hard-codes service enablement and duplicates Compose's configuration surface.
+Reviewed 2026-10-22 against commit ea5c9f7cb7734f1bee302e22bfd8035a8e851fc4 with local changes. Compose allows LLAMA_ARG_PORT to vary, but its published target stays 10732 and bundled OpenCode baseURL stays 10732. Router YAML also contains 10732. Direct-image optional services default off while OpenCode MCP entries default enabled. Make run hard-codes service enablement and duplicates Compose's configuration surface. First-run config seeding now preserves existing files and symlinks.
 
 ## Boundaries and decisions
 
@@ -48,9 +48,9 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 ## PRT-02 — Seed agent defaults from service enablement
 
-- Status: planned
+- Status: ready
 - Budget: 5 active hours maximum
-- Prerequisites: CFG-01
+- Prerequisites: none
 - Exact write set: `rootfs/etc/cont-init.d/20-indigo-agent-config`, `config/agents/opencode.json`, `tests/agent-defaults.sh`
 - Primary integration lock: config-seeding
 - Outcome: Enable only configured optional MCP connections on first boot.

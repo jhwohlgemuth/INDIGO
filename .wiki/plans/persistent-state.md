@@ -15,11 +15,11 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Reviewed 2026-10-22 against commit ea5c9f7cb7734f1bee302e22bfd8035a8e851fc4. `Makefile` run mounts eight volumes but omits `/home/nonroot/.config/llama-swap`, whereas Compose persists it. The quick-start workspace is explicitly ephemeral. README lists persistent data but contains no backup/restore procedure, migration checks or restore rehearsal.
+Rechecked 2026-10-22 at commit db2c536517837492b31007cf86688ec6b7e23fa3. `Makefile` run mounts eight volumes but omits `/home/nonroot/.config/llama-swap`, whereas Compose persists it. The quick-start workspace is explicitly ephemeral. README lists persistent data but contains no backup/restore procedure, migration checks or restore rehearsal.
 
 ## Boundaries and decisions
 
-Add router persistence to the fully persistent run mode. Keep quick-start behavior explicit. Back up credentials privately and exclude re-downloadable model/cache data by default. This is remaining work, not an implementation claim. Docker runtime behavior and performance were not verified during this review because daemon access was denied.
+Add router persistence to the fully persistent `make run` mode. Keep quick-start behavior explicit. Back up workspace, router config, and agent/OpenViking/Pinokio state from a stopped instance; exclude re-downloadable model and cache data by default. Restore into a differently named disposable instance with private credential handling. No Docker daemon was available for the required rehearsal.
 
 ## Dependencies
 
@@ -37,9 +37,9 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 ## DAT-01 — Persist standalone router configuration
 
-- Status: ready
+- Status: blocked
 - Budget: 5 active hours maximum
-- Prerequisites: none
+- Prerequisites: accessible Docker host with disposable container and named volume
 - Exact write set: `Makefile`, `README.md`, `tests/run-mounts.sh`
 - Primary integration lock: standalone-launch
 - Outcome: Add the missing named volume and reconcile the volume count.
@@ -48,9 +48,9 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 ## DAT-02 — Add and rehearse recovery instructions
 
-- Status: planned
+- Status: blocked
 - Budget: 5 active hours maximum
-- Prerequisites: Accessible Docker host with disposable test volumes
+- Prerequisites: DAT-01; accessible Docker host with disposable test volumes
 - Exact write set: `docs/backup-restore.md`, `README.md`
 - Primary integration lock: runtime-docs
 - Outcome: Document consistent stop/snapshot/restore steps, included paths, exclusions and rollback.

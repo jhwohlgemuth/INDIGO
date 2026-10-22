@@ -1,32 +1,31 @@
 # INDIGO planning portfolio
 
-Reviewed 2026-10-22 at commit ea5c9f7cb7734f1bee302e22bfd8035a8e851fc4. This portfolio contains 11 executable plans. Sorting is impact descending, then difficulty ascending; ties favor user-visible correctness and stronger evidence. Difficulty is relative remaining engineering complexity, not elapsed duration. Every phase is capped at five active hours; larger plans have multiple phases.
+Updated 2026-10-22 from commit db2c536517837492b31007cf86688ec6b7e23fa3 with implementation changes pending Linux CI. This portfolio contains 10 executable plans, including six high impact plans. Sorting is impact descending, then difficulty ascending; ties favor user-visible correctness and stronger evidence. Difficulty is relative remaining engineering complexity, not elapsed duration. Every phase is capped at five active hours; larger plans have multiple phases.
 
 | Rank | Remaining outcome | Impact | Difficulty |
 | --- | --- | --- | --- |
-| 1 | [Bound aggregate health checks](plans/health-budget.md) | high | low |
-| 2 | [Make OpenViking host access explicit and secure](plans/openviking-access.md) | high | medium |
-| 3 | [Render model and workspace paths safely](plans/safe-config-rendering.md) | high | medium |
-| 4 | [Pin and verify build inputs](plans/reproducible-builds.md) | high | medium |
-| 5 | [Test service behavior before releasing images](plans/runtime-ci.md) | high | medium |
-| 6 | [Preserve router configuration and document recovery](plans/persistent-state.md) | high | medium |
-| 7 | [Verify platform support and a genuine CPU path](plans/platform-contract.md) | high | high |
-| 8 | [Make onboarding and release documentation consistent](plans/docs-onboarding.md) | medium | low |
-| 9 | [Make environment validation and instance creation dependable](plans/environment-validation.md) | medium | medium |
-| 10 | [Unify internal ports and generated client defaults](plans/port-and-agent-contracts.md) | medium | medium |
-| 11 | [Reduce measured build and idle resource costs](plans/build-and-runtime-efficiency.md) | medium | high |
+| 1 | [Make OpenViking host access explicit and secure](plans/openviking-access.md) | high | medium |
+| 2 | [Render model and workspace paths safely](plans/safe-config-rendering.md) | high | medium |
+| 3 | [Pin and verify build inputs](plans/reproducible-builds.md) | high | medium |
+| 4 | [Test service behavior before releasing images](plans/runtime-ci.md) | high | medium |
+| 5 | [Preserve router configuration and document recovery](plans/persistent-state.md) | high | medium |
+| 6 | [Verify platform support and a genuine CPU path](plans/platform-contract.md) | high | high |
+| 7 | [Make onboarding and release documentation consistent](plans/docs-onboarding.md) | medium | low |
+| 8 | [Make environment validation and instance creation dependable](plans/environment-validation.md) | medium | medium |
+| 9 | [Unify internal ports and generated client defaults](plans/port-and-agent-contracts.md) | medium | medium |
+| 10 | [Reduce measured build and idle resource costs](plans/build-and-runtime-efficiency.md) | medium | high |
 
 ## Navigation
 
 - [Plan directory](plans/index.md)
 - [Dependency network](plan-network.md)
-- [Parallel lanes and integration locks](parallel-execution.md)
+- [Parallel lanes, integration locks, and high impact launch order](parallel-execution.md)
 
 ## Review scope and limitations
 
-Inspected all tracked application scripts, service definitions, image/build configuration, agent/router templates, CI and user/architecture documentation. No CodeGraph directory exists. The initial worktree was clean. Recent history includes the portability merge, user-story work and source-built inference support; recommendations account for existing CPU/isolated overrides, loopback publishing, pinned Pinokio and bounded OpenViking retries.
+Inspected all tracked application scripts, service definitions, image/build configuration, agent/router templates, CI and user/architecture documentation. No CodeGraph directory exists. The initial worktree was clean. Recent history includes the portability merge, user-story work and source-built inference support; recommendations account for existing CPU/isolated overrides, loopback publishing, pinned Pinokio and bounded OpenViking retries. Local implementation now includes bounded parallel health checks, safe model config seeding, corrected OpenViking access documentation, standalone GPU selection, shell contract tests and pinned CI tools.
 
-All four Compose combinations passed config --quiet: base, CPU, isolated, CPU plus isolated. Docker daemon access was denied, so no image build, runtime smoke test, inference benchmark or energy measurement was performed. Runtime claims derived from source are identified as such in the plans. No product code changed. Review is not a vulnerability audit or a measured performance assessment.
+All four Compose combinations passed config --quiet during the portfolio review and local lint run: base, CPU, isolated, CPU plus isolated. The current selected Docker context is unreachable; Docker Desktop and the local socket have no running daemon. Local `make check` and `make lint` pass, but Linux CI and image/runtime validation remain pending. No inference benchmark or energy measurement was performed. High impact phases that require Docker verification are marked blocked. Runtime claims derived from source are identified as such in the plans. Review is not a vulnerability audit or a measured performance assessment.
 
 ## Planning convention
 

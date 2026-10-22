@@ -13,15 +13,19 @@ endif
 .PHONY: prepare format check check-env lint build image-smoke push compose-build up up-cpu up-isolated down restart logs ps filesystem rust instance start run stop rm exec
 
 COMPOSE ?= docker compose
+YAMLLINT ?= yamllint
 COMPOSE_ARGS ?= -f ./compose.yaml $(if $(ENV_FILE),--env-file $(ENV_FILE),)
 DOCKER_FILES := ./Dockerfile $(wildcard ./containers/*/Dockerfile)
-SHELL_FILES := $(wildcard ./scripts/*.sh) $(wildcard ./rootfs/etc/cont-init.d/*) $(wildcard ./rootfs/etc/services.d/*/*) $(wildcard ./rootfs/opt/*/bin/*)
+SHELL_FILES := $(wildcard ./scripts/*.sh) $(wildcard ./rootfs/etc/cont-init.d/*) $(wildcard ./rootfs/etc/services.d/*/*) $(wildcard ./rootfs/opt/*/bin/*) $(wildcard ./tests/*.sh)
+TEST_FILES := $(wildcard ./tests/*.sh)
 YAML_FILES := $(wildcard ./config/*/*.yaml) $(wildcard ./.github/workflows/*.yml ./.github/workflows/*.yaml) $(wildcard ./compose*.yaml)
 FORMAT_FILES := ./.shellcheckrc $(SHELL_FILES) $(YAML_FILES)
 
 CONTAINER ?= $(INDIGO_HOSTNAME)
 IMAGE_REF ?= ${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:${VERSION}
 INDIGO_HOME ?= /home/nonroot
+GPU ?= 1
+GPU_ARGS = $(if $(filter 0,$(GPU)),,--gpus all)
 
 prepare: format lint check
 
@@ -33,13 +37,14 @@ check:
 	@shfmt --diff $(SHELL_FILES)
 	@shellcheck $(SHELL_FILES)
 	@./scripts/check.sh $(ENV_FILE)
+	@set -e; for test in $(TEST_FILES); do bash "$$test"; done
 
 check-env:
 	@./scripts/check.sh $(ENV_FILE)
 
 lint:
 	@hadolint $(DOCKER_FILES)
-	@yamllint $(YAML_FILES)
+	@$(YAMLLINT) $(YAML_FILES)
 	@$(COMPOSE) $(COMPOSE_ARGS) config --quiet
 	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.cpu.yaml config --quiet
 	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.isolated.yaml config --quiet
@@ -91,7 +96,7 @@ start:
 		--tty \
 		--name "$(CONTAINER)" \
 		--hostname "$(CONTAINER)" \
-		--gpus all \
+		$(GPU_ARGS) \
 		--restart unless-stopped \
 		--shm-size "$(INDIGO_SHM_SIZE)" \
 		"$(IMAGE_REF)"
@@ -108,7 +113,7 @@ run:
 		--tty \
 		--name "$(CONTAINER)" \
 		--hostname "$(CONTAINER)" \
-		--gpus all \
+		$(GPU_ARGS) \
 		--restart unless-stopped \
 		--shm-size "$(INDIGO_SHM_SIZE)" \
 		--env INDIGO_ENABLE_FILESYSTEM=1 \
