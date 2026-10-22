@@ -10,10 +10,10 @@ through a generated MCP configuration.
 The Indigo container runs persistent OpenViking, Pinokio, Filesystem MCP,
 and Rust Analyzer MCP processes under s6 alongside inference.
 
-| Service | Purpose | Host endpoint |
+| Service | Purpose | Access |
 | --- | --- | --- |
 | Indigo inference | Local OpenAI-compatible models | `http://127.0.0.1:10732/v1` |
-| OpenViking | Context database, Studio, and MCP | `http://127.0.0.1:1933` |
+| OpenViking | Context database, Studio, and MCP | Container only: `http://127.0.0.1:1933` inside Indigo |
 | Pinokio | Management interface | `http://127.0.0.1:42000` |
 | Pinokio proxy | Stable ingress for dynamic web apps | `http://127.0.0.1:42080` |
 | Filesystem MCP | Workspace-scoped file operations | `http://127.0.0.1:11002/mcp` |
@@ -21,8 +21,11 @@ and Rust Analyzer MCP processes under s6 alongside inference.
 
 > Lean formal verification has moved to [`jhwohlgemuth/gold`](https://github.com/jhwohlgemuth/gold) as a standalone `mcp-lean` service (`--profile formal`).
 
-All published ports bind to `127.0.0.1` by default. Every host port and the
-bind address are configurable with Compose environment variables.
+All published ports bind to `127.0.0.1` by default. OpenViking also binds to
+loopback inside the container, so its published port is not reachable from the
+host in the default configuration. Host access requires a separate authenticated
+Compose override. Every host port and the host publish address are configurable
+with Compose environment variables.
 
 ## Quick start
 
@@ -50,8 +53,11 @@ becomes an endless restart loop that reprints every service's startup logs.
 
 `--gpus all` needs the NVIDIA container toolkit installed on the Docker host.
 Without it the container cannot start, even when a GPU is present. On a
-CPU-only host, omit `--gpus all`. macOS runs this image through Docker's Linux
-virtual machine and has no NVIDIA passthrough.
+CPU-only host, omit `--gpus all`. The standalone Make targets provide the same
+choice with `GPU=0`, for example `make start GPU=0` or `make run GPU=0`. This
+removes the runtime GPU request; the current image still includes CUDA.
+macOS runs this image through Docker's Linux virtual machine and has no NVIDIA
+passthrough.
 
 To select a model other than `gpt-oss-20b`, set `INDIGO_DEFAULT_MODEL` to a
 name made of letters, numbers, dots, underscores, and hyphens, and set
@@ -72,6 +78,7 @@ and the publish address stay configurable:
 
 ```shell
 make run
+make run GPU=0              # omit the runtime GPU request
 make run ENV_FILE=.env.two
 make stop
 make rm
@@ -85,15 +92,18 @@ exercise the image:
 
 ```shell
 make start
+make start GPU=0            # omit the runtime GPU request
 docker attach indigo
 make stop
 ```
 
-A fully published variant with host bind mounts instead of named volumes is
-also available. It exposes every service, turns the optional Indigo services
-on, and keeps the workspace, models, OpenViking state, Pinokio installations,
+A variant with host bind mounts instead of named volumes is also available. It
+publishes the service ports, turns the optional Indigo services on, and keeps
+the workspace, models, OpenViking state, Pinokio installations,
 and agent state directly accessible from the host. Create any missing host
 directories first. Its ports match `make run`; only the volume sources differ.
+The OpenViking host port in these commands remains unreachable because the
+service listens on container loopback.
 
 Windows PowerShell:
 
@@ -161,7 +171,8 @@ For a completely Docker-managed deployment with no host bind mounts:
 docker compose -f compose.yaml -f compose.isolated.yaml up --build --detach
 ```
 
-For a CPU-only full deployment, omit the GPU reservation:
+For a CPU-only full deployment, omit the GPU reservation. This still builds
+the current CUDA-containing image:
 
 ```shell
 docker compose -f compose.yaml -f compose.cpu.yaml up --build --detach
@@ -258,10 +269,12 @@ on a bounded interval instead, reporting the failure once per attempt, and
 retries immediately when `ov.conf` changes. Set `OPENVIKING_RETRY_INTERVAL` to
 change the interval (default `300` seconds).
 
-OpenViking binds `127.0.0.1` by default because `openviking-server` refuses
-`dev` auth mode on a non-loopback host. Set `OPENVIKING_SERVER_HOST` and
-`server.auth_mode` together if you need a different binding; `api_key` auth with
-a configured `server.root_api_key` is required before binding beyond loopback.
+OpenViking binds `127.0.0.1` inside the container because `openviking-server`
+refuses `dev` auth mode on a non-loopback host. Compose fixes this address to
+container loopback; changing `.env`, `OPENVIKING_SERVER_HOST` in the shell, or
+the host port mapping does not make it reachable. A separate Compose override
+must change the container listener and enable `api_key` authentication with a
+configured `server.root_api_key` before host access is possible.
 
 `OPENVIKING_WITH_BOT=1` adds the optional bot endpoint. It is off by default,
 and the flag is only passed when enabled, so the server never starts with an
@@ -320,6 +333,9 @@ Codex. Indigo does not overwrite host dotfiles.
 Indigo MCP templates intended for consumption by `my-shell-setup`, not an
 independent manual host-install mechanism. The OpenCode template intentionally
 contains no model inventory because ACORN supplies it.
+Their OpenViking entries require authenticated host access before they can
+connect; the default container-local listener is only available to Indigo-local
+clients.
 
 ## Pinokio reverse proxy
 
@@ -343,9 +359,10 @@ use the managed web proxy or add an explicit, narrowly scoped port mapping to
 ## External access and security
 
 Set `INDIGO_PUBLISH_HOST=0.0.0.0` to accept connections through any host
-interface. Do this only on a trusted network or behind an authenticated,
-TLS-terminating gateway: most MCP services have no inbound authentication and
-the filesystem MCP can modify the shared workspace.
+interface for services with a network-facing container listener; the default
+OpenViking listener remains container-local. Do this only on a trusted network
+or behind an authenticated, TLS-terminating gateway: most MCP services have no
+inbound authentication, and the filesystem MCP can modify the shared workspace.
 
 Common port overrides, edited in `.env` and validated with `make check-env`:
 
@@ -379,13 +396,10 @@ generated `llama-swap` entries.
 
 ## Platform support
 
-| Host | Supported path |
-| --- | --- |
-| Linux + NVIDIA | Standalone or full stack with GPU |
-| Windows + WSL2 + NVIDIA | Standalone or full stack with GPU |
-| Linux CPU-only | Standalone without `--gpus all`, or `compose.cpu.yaml` |
-| macOS | CPU-only; no NVIDIA passthrough |
-| AMD GPU | No accelerated path is currently packaged |
+The [platform evidence table](docs/platform-support.md) separates configured
+launch paths from runtime-tested combinations. `GPU=0` supports the standalone
+CPU launch contract; `compose.cpu.yaml` removes the Compose GPU request. A
+CUDA-free CPU image and a CPU model-serving test remain to be completed.
 
 The container itself is Linux-based and depends on the versioned
 `ghcr.io/jhwohlgemuth/notebook` base-image contract described in

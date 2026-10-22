@@ -15,11 +15,11 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Reviewed 2026-10-22 against commit ea5c9f7cb7734f1bee302e22bfd8035a8e851fc4. `scripts/build_llama_cpp_from_source.sh:67` clones llama.cpp default HEAD without checkout. `Dockerfile:149` installs current Homebrew hf and llama-swap. Image references are mutable tags. CI downloads shfmt without checksum verification. Pinokio's source commit and npm ci already provide useful partial pinning.
+Rechecked 2026-10-22 at commit db2c536517837492b31007cf86688ec6b7e23fa3 with local changes. `scripts/build_llama_cpp_from_source.sh:67` clones llama.cpp default HEAD without checkout. `Dockerfile:149` installs current Homebrew hf and llama-swap. Image references are mutable tags. CI now pins checkout to a full commit and verifies shfmt v3.11.0 before installation; `docs/dependency-updates.md` records both inputs and the update process. Pinokio's source commit and npm ci already provide useful partial pinning.
 
 ## Boundaries and decisions
 
-Start with the inference dependency; extend to reviewed immutable image/tool references with a documented update process. Do not assert bit-for-bit reproducibility while apt and transitive package resolution remain unlocked. This is remaining work, not an implementation claim. Docker runtime behavior and performance were not verified during this review because daemon access was denied.
+Start with the inference dependency: select a reviewed full upstream commit, pass it as a Docker build argument, check it out detached, and label the built image with the revision. Handle OCI base images, CI downloads, and Homebrew version guards in separate phases with a shared update record. Do not assert bit-for-bit reproducibility while apt, Homebrew and transitive package resolution remain unlocked. No image builder was available for verification.
 
 ## Dependencies
 
@@ -37,23 +37,45 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 ## REP-01 — Pin the inference source revision
 
-- Status: ready
+- Status: blocked
 - Budget: 5 active hours maximum
-- Prerequisites: none
+- Prerequisites: provisioned image builder and access to the selected upstream llama.cpp revision
 - Exact write set: `scripts/build_llama_cpp_from_source.sh`, `Dockerfile`, `tests/build-inputs.sh`
 - Primary integration lock: image-build
-- Outcome: Build llama.cpp from a reviewed full commit SHA and record it in image metadata.
+- Outcome: Use one reviewed full llama.cpp commit SHA as the default build argument, reject invalid revisions, and record the checked-out revision in image metadata.
 - Focused validation: Verify invalid revisions fail, the requested commit is checked out, and the compiled binary reports the expected version on a provisioned builder.
 - Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
 
-## REP-02 — Record and verify remaining release inputs
+## REP-02 — Pin OCI base image inputs
 
-- Status: planned
+- Status: blocked
 - Budget: 5 active hours maximum
 - Prerequisites: REP-01; access to upstream registries and a provisioned image builder
-- Exact write set: `Dockerfile`, `.github/workflows/container.yml`, `docs/dependency-updates.md`
+- Exact write set: `Dockerfile`, `docs/dependency-updates.md`
 - Primary integration lock: image-build
-- Outcome: Pin supported image and tool inputs, document residual apt/pip/npm resolution risk and the update procedure.
-- Focused validation: Verify checksums fail on changed bytes; inspect resolved image digests and installed tool versions; run image smoke tests after reviewed updates.
+- Outcome: Replace mutable `FROM` references with reviewed tag-plus-digest references and document how to review updates and the remaining apt/pip/npm resolution risk.
+- Focused validation: Inspect resolved digests, build the image and run image smoke checks on a provisioned builder.
+- Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
+
+## REP-03 — Verify CI tool downloads
+
+- Status: in-progress
+- Budget: 5 active hours maximum
+- Prerequisites: none
+- Exact write set: `.github/workflows/container.yml`, `docs/dependency-updates.md`
+- Primary integration lock: ci-workflow
+- Outcome: Verify the downloaded shfmt artifact by SHA-256 before installation, pin checkout to a reviewed commit, and record the update procedure.
+- Focused validation: Confirm a changed shfmt byte fails verification; run the shell checks and review the workflow result on Linux CI.
+- Handoff: `.github/workflows/container.yml` and `docs/dependency-updates.md` changed. The official shfmt release asset matched the recorded SHA-256; a byte-changed fixture failed the same check; local `make check` and `make lint` passed. Review the Linux workflow result, repair any focused defect, then remove REP-03 and reconcile the wiki.
+
+## REP-04 — Guard Homebrew tool versions
+
+- Status: blocked
+- Budget: 5 active hours maximum
+- Prerequisites: access to Homebrew sources and a provisioned image builder
+- Exact write set: `Dockerfile`, `docs/dependency-updates.md`
+- Primary integration lock: image-build
+- Outcome: Add expected-version build arguments for `hf` and `llama-swap`, fail the build on version drift, and record resolved versions and the update procedure.
+- Focused validation: Build the image with expected versions, assert a mismatched expected version fails, inspect installed versions, and run image smoke checks.
 - Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
 

@@ -16,16 +16,35 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Install shell validation tools
-        run: sudo apt-get update && sudo apt-get install --yes shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes shellcheck yamllint
       - name: Install shfmt
         run: |
           curl --fail --location --output /tmp/shfmt \
             https://github.com/mvdan/sh/releases/download/v3.11.0/shfmt_v3.11.0_linux_amd64
+          printf '%s  %s\n' \
+            1904ec6bac715c1d05cd7f6612eec8f67a625c3749cb327e5bfb4127d09035ff \
+            /tmp/shfmt | sha256sum --check
           sudo install /tmp/shfmt /usr/local/bin/shfmt
+      - name: Install Hadolint command
+        run: |
+          cat > /tmp/hadolint <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          digest='sha256:aacf4eda44e40057051f5c5b02546e3a'
+          digest+='da7e8b84d4bbf9312c89524a7e9a0b51'
+          exec docker run --rm --volume "${PWD}:/work" --workdir /work \
+            "ghcr.io/hadolint/hadolint:v2.15.1-debian@${digest}" \
+            hadolint "$@"
+          EOF
+          sudo install -m 0755 /tmp/hadolint /usr/local/bin/hadolint
       - name: Check shell scripts
         run: make check
+      - name: Lint build and Compose configuration
+        run: make lint
       - name: Build image
         run: make build
       - name: Smoke test image contents
@@ -34,7 +53,7 @@ jobs:
   windows-config:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Validate Compose modes
         shell: pwsh
         run: |

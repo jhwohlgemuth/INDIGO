@@ -2,7 +2,6 @@
 
 See the [ranked portfolio](../index.md), [dependencies](../plan-network.md) and [integration locks](../parallel-execution.md).
 
-- [Bound aggregate health checks](health-budget.md)
 - [Make OpenViking host access explicit and secure](openviking-access.md)
 - [Render model and workspace paths safely](safe-config-rendering.md)
 - [Pin and verify build inputs](reproducible-builds.md)
