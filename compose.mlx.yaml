@@ -1,0 +1,22 @@
+---
+# Apple Silicon mode: the MLX server runs on macOS and Indigo routes to it.
+services:
+  indigo:
+    image: "${REGISTRY:?}/${REGISTRY_PROJECT:?}/${IMAGE:?}:${VERSION:?}-mlx-arm64"
+    build:
+      args:
+        NOTEBOOK_VERSION: "${NOTEBOOK_VERSION:?}"
+        INDIGO_LLAMA_BACKEND: cpu
+    gpus: !reset []
+    platform: linux/arm64
+    environment:
+      INDIGO_ROUTER_MODE: mlx
+      INDIGO_MLX_PORT: "${INDIGO_MLX_PORT:-10733}"
+    volumes:
+      - type: bind
+        source: "${INDIGO_MLX_SWAP_CONFIG_PATH:-./.indigo/mlx/llama-swap}"
+        target: /home/nonroot/.config/llama-swap
+      - opencode-config-mlx:/home/nonroot/.config/opencode
+
+volumes:
+  opencode-config-mlx:

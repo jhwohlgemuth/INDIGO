@@ -46,10 +46,14 @@ defaults:
   volumes. `compose.cpu.yaml` removes the NVIDIA GPU reservation. The overrides
   are composable.
 
-All modes use the same image. `INDIGO_ENABLE_INFERENCE`,
+The default modes use the same image. `INDIGO_ENABLE_INFERENCE`,
 `INDIGO_ENABLE_FILESYSTEM`, `INDIGO_ENABLE_RUST_ANALYZER`,
 `INDIGO_ENABLE_OPENVIKING`, and `INDIGO_ENABLE_PINOKIO` control the optional
 service processes and their health obligations.
+
+The opt-in Apple Silicon mode uses a CUDA-free ARM64 image and a native host `mlx-lm` process.
+Its separate `llama-swap` configuration declares the host server as a peer reachable through Docker Desktop.
+OpenCode still uses the container router on port 10732, with `mlx/default_model` selected initially.
 
 ## Service boundaries
 
@@ -114,6 +118,9 @@ build time, because a build that misses either still produces an image that
 starts cleanly and only fails when `llama-swap` tries to serve a model. Router
 liveness, for example `llama-swap`'s own `/health` response, is not evidence
 that inference works; only a loaded model is.
+
+The Mac image builds a CPU `llama-server` as a fallback and omits CUDA installation.
+The host MLX process is managed by INDIGO's opt-in Mac command; the container does not install MLX or attempt to access the Mac GPU directly.
 
 ## Networking and trust boundary
 

@@ -5,14 +5,19 @@ set -euo pipefail
 model="${INDIGO_DEFAULT_MODEL:-gpt-oss-20b}"
 model_path="${INDIGO_DEFAULT_MODEL_PATH:-${MODEL_DIRECTORY:-${HOME}/.models}/${model}}"
 defaults_dir="${INDIGO_DEFAULTS_DIR:-/etc/indigo/defaults}"
+router_mode="${INDIGO_ROUTER_MODE:-llama}"
 
-if [[ ! "${model}" =~ ^[A-Za-z0-9._-]+$ ]]; then
-	echo "INDIGO_DEFAULT_MODEL must contain only letters, numbers, dots, underscores, or hyphens" >&2
-	exit 1
-fi
-
-if [[ ! "${model_path}" =~ ^/[A-Za-z0-9._/-]+$ ]]; then
-	echo "INDIGO_DEFAULT_MODEL_PATH must be an absolute path containing only letters, numbers, dots, underscores, hyphens, or slashes" >&2
+if [[ "${router_mode}" == llama ]]; then
+	if [[ ! "${model}" =~ ^[A-Za-z0-9._-]+$ ]]; then
+		echo "INDIGO_DEFAULT_MODEL must contain only letters, numbers, dots, underscores, or hyphens" >&2
+		exit 1
+	fi
+	if [[ ! "${model_path}" =~ ^/[A-Za-z0-9._/-]+$ ]]; then
+		echo "INDIGO_DEFAULT_MODEL_PATH must be an absolute path containing only letters, numbers, dots, underscores, hyphens, or slashes" >&2
+		exit 1
+	fi
+elif [[ "${router_mode}" != mlx ]]; then
+	echo "INDIGO_ROUTER_MODE must be llama or mlx" >&2
 	exit 1
 fi
 
@@ -74,10 +79,21 @@ install_default() {
 	publish_default "${temporary}" "${target}"
 }
 
-render_default "${defaults_dir}/llama-swap.yaml" \
-	"${INDIGO_LLAMA_SWAP_CONFIG_FILE:-${HOME}/.config/llama-swap/config.yaml}" 0644
+if [[ "${router_mode}" == mlx ]]; then
+	install_default "${defaults_dir}/llama-swap-mlx.yaml" \
+		"${INDIGO_LLAMA_SWAP_CONFIG_FILE:-${HOME}/.config/llama-swap/config.yaml}" 0644
+	opencode_source="${defaults_dir}/opencode-mlx.json"
+else
+	render_default "${defaults_dir}/llama-swap.yaml" \
+		"${INDIGO_LLAMA_SWAP_CONFIG_FILE:-${HOME}/.config/llama-swap/config.yaml}" 0644
+	opencode_source="${defaults_dir}/opencode.json"
+fi
 
 if [[ "${INDIGO_SEED_AGENT_CONFIG:-true}" == "true" ]]; then
-	render_default "${defaults_dir}/opencode.json" "${HOME}/.config/opencode/opencode.json" 0644
+	if [[ "${router_mode}" == mlx ]]; then
+		install_default "${opencode_source}" "${HOME}/.config/opencode/opencode.json" 0644
+	else
+		render_default "${opencode_source}" "${HOME}/.config/opencode/opencode.json" 0644
+	fi
 	install_default "${defaults_dir}/codex.toml" "${HOME}/.codex/config.toml" 0600
 fi

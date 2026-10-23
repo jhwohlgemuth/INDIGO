@@ -14,6 +14,7 @@ force=0
 
 port_keys=(
     INFERENCE_PUBLISHED_PORT
+    INDIGO_MLX_PORT
     CODE_SERVER_PUBLISHED_PORT
     VERDACCIO_PUBLISHED_PORT
     JUPYTER_PUBLISHED_PORT
@@ -136,7 +137,7 @@ if command -v lsof > /dev/null 2>&1; then
     done
 fi
 
-override_keys="COMPOSE_PROJECT_NAME|INDIGO_HOSTNAME|PINOKIO_DOMAIN|INDIGO_WORKSPACE_PATH|INDIGO_MODELS_PATH|INDIGO_LLAMA_SWAP_CONFIG_PATH"
+override_keys="COMPOSE_PROJECT_NAME|INDIGO_HOSTNAME|PINOKIO_DOMAIN|INDIGO_WORKSPACE_PATH|INDIGO_MODELS_PATH|INDIGO_LLAMA_SWAP_CONFIG_PATH|INDIGO_MLX_SWAP_CONFIG_PATH"
 for key in "${port_keys[@]}"; do
     override_keys="${override_keys}|${key}"
 done
@@ -152,6 +153,7 @@ done
     printf 'INDIGO_WORKSPACE_PATH=./.indigo/%s/workspace\n' "${name}"
     printf 'INDIGO_MODELS_PATH=./.indigo/%s/models\n' "${name}"
     printf 'INDIGO_LLAMA_SWAP_CONFIG_PATH=./.indigo/%s/llama-swap\n' "${name}"
+    printf 'INDIGO_MLX_SWAP_CONFIG_PATH=./.indigo/%s/llama-swap-mlx\n' "${name}"
     for index in "${!port_keys[@]}"; do
         printf '%s=%s\n' "${port_keys[${index}]}" "${new_ports[${index}]}"
     done
@@ -167,6 +169,7 @@ done
 printf '  %-34s %s\n' "INDIGO_WORKSPACE_PATH" "./.indigo/${name}/workspace"
 printf '  %-34s %s\n' "INDIGO_MODELS_PATH" "./.indigo/${name}/models"
 printf '  %-34s %s\n' "INDIGO_LLAMA_SWAP_CONFIG_PATH" "./.indigo/${name}/llama-swap"
+printf '  %-34s %s\n' "INDIGO_MLX_SWAP_CONFIG_PATH" "./.indigo/${name}/llama-swap-mlx"
 echo
 echo "  docker compose --env-file ${env_file} -p indigo-${name} up --detach"
 

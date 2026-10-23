@@ -63,12 +63,18 @@ for key in "${required[@]}"; do
     fi
 done
 
+if [[ "$(count_of INDIGO_MLX_PORT)" -gt 1 ]]; then
+    echo "error: INDIGO_MLX_PORT is defined more than once in ${env_file}" >&2
+    status=1
+fi
+
 declare_list=()
 for key in "${required[@]}"; do
     if [[ "${key}" == *_PUBLISHED_PORT ]]; then
         declare_list+=("${key}")
     fi
 done
+declare_list+=(INDIGO_MLX_PORT)
 
 ports=()
 for key in "${declare_list[@]}"; do

@@ -10,7 +10,7 @@ ifneq ($(ENV_FILE),)
 include $(ENV_FILE)
 endif
 
-.PHONY: prepare format check check-env lint build image-smoke push compose-build up up-cpu up-isolated down restart logs ps filesystem rust instance start run stop rm exec
+.PHONY: prepare format check check-env lint build image-smoke push compose-build up up-cpu up-isolated up-mlx down down-mlx mlx-setup mlx-model mlx-model-download mlx-model-check mlx-model-self-test mlx-status restart logs ps filesystem rust instance start run stop rm exec
 
 COMPOSE ?= docker compose
 YAMLLINT ?= yamllint
@@ -26,6 +26,13 @@ IMAGE_REF ?= ${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:${VERSION}
 INDIGO_HOME ?= /home/nonroot
 GPU ?= 1
 GPU_ARGS = $(if $(filter 0,$(GPU)),,--gpus all)
+MLX_MODEL_REPO ?= mlx-community/gpt-oss-20b-MXFP4-Q8
+MLX_MODEL_DIR ?= $(CURDIR)/.indigo/models/$(notdir $(MLX_MODEL_REPO))
+MLX_MODEL ?= $(MLX_MODEL_DIR)
+MLX_STATE_DIR = $(or $(INDIGO_MLX_STATE_DIR),$(CURDIR)/.indigo/mlx)
+export MLX_MODEL
+export INDIGO_MLX_PORT
+export INDIGO_MLX_INSTANCE = $(or $(COMPOSE_PROJECT_NAME),indigo)
 
 prepare: format lint check
 
@@ -38,6 +45,7 @@ check:
 	@shellcheck $(SHELL_FILES)
 	@./scripts/check.sh $(ENV_FILE)
 	@set -e; for test in $(TEST_FILES); do bash "$$test"; done
+	@$(MAKE) mlx-model-self-test
 
 check-env:
 	@./scripts/check.sh $(ENV_FILE)
@@ -49,6 +57,7 @@ lint:
 	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.cpu.yaml config --quiet
 	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.isolated.yaml config --quiet
 	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.cpu.yaml -f ./compose.isolated.yaml config --quiet
+	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.mlx.yaml config --quiet
 
 compose-build:
 	@$(COMPOSE) $(COMPOSE_ARGS) build
@@ -61,6 +70,34 @@ up-cpu:
 
 up-isolated:
 	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.isolated.yaml up --detach
+
+mlx-setup:
+	@./scripts/mlx-host.sh setup
+
+mlx-model: mlx-model-download
+	@python3 ./scripts/mlx-model-check.py "$(MLX_MODEL_DIR)"
+
+mlx-model-download:
+	@if [ ! -x "$(MLX_STATE_DIR)/venv/bin/hf" ] || [ ! -x "$(MLX_STATE_DIR)/venv/bin/mlx_lm.server" ]; then $(MAKE) mlx-setup; fi
+	@"$(MLX_STATE_DIR)/venv/bin/hf" download "$(MLX_MODEL_REPO)" --local-dir "$(MLX_MODEL_DIR)"
+
+mlx-model-check:
+	@python3 ./scripts/mlx-model-check.py "$(MLX_MODEL)"
+
+mlx-model-self-test:
+	@python3 -m unittest discover -s tests -p 'test_mlx_model.py'
+
+up-mlx:
+	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.mlx.yaml build
+	@./scripts/mlx-host.sh start
+	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.mlx.yaml up --no-build --detach
+
+mlx-status:
+	@./scripts/mlx-host.sh status
+
+down-mlx:
+	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.mlx.yaml down
+	@./scripts/mlx-host.sh stop
 
 down:
 	@$(COMPOSE) $(COMPOSE_ARGS) down

@@ -1,0 +1,10 @@
+healthCheckTimeout: 500
+logToStdout: "none"
+proxy:
+  listen: "http://0.0.0.0:10732"
+models: {}
+peers:
+  mlx:
+    proxy: "http://host.docker.internal:${env.INDIGO_MLX_PORT}"
+    models:
+      - default_model

@@ -1,4 +1,4 @@
-ARG NOTEBOOK_VERSION=1.0.4
+ARG NOTEBOOK_VERSION=1.0.5
 ARG PINOKIO_NODE_VERSION=20
 ARG PINOKIO_COMMIT=2c39f9fe9c40c985e03b13ab8a48ead908139b39
 ARG MCP_NODE_VERSION=24
@@ -53,6 +53,7 @@ ARG MODEL_DIRECTORY="${HOME}/.models"
 ARG CONTEXT_SIZE=0
 ARG PORT=10732
 ARG OPENVIKING_VERSION=0.4.17
+ARG INDIGO_LLAMA_BACKEND=cuda
 #
 # %environment
 #
@@ -106,7 +107,9 @@ COPY --from=rust-toolchain /usr/local/cargo /usr/local/cargo
 COPY --from=rust-toolchain /usr/local/rustup /usr/local/rustup
 COPY --chmod=0755 ./rootfs/opt/pinokio/bin/conda /opt/pinokio/bin/conda
 COPY --chmod=0644 ./config/llama-swap/config.yaml /etc/indigo/defaults/llama-swap.yaml
+COPY --chmod=0644 ./config/llama-swap/mlx.yaml /etc/indigo/defaults/llama-swap-mlx.yaml
 COPY --chmod=0644 ./config/agents/opencode.json /etc/indigo/defaults/opencode.json
+COPY --chmod=0644 ./config/agents/opencode.mlx.json /etc/indigo/defaults/opencode-mlx.json
 COPY --chmod=0644 ./config/agents/codex.toml /etc/indigo/defaults/codex.toml
 COPY --chmod=0755 ./scripts/healthcheck.sh /healthcheck
 COPY --chmod=0755 ./scripts/build_llama_cpp_from_source.sh /tmp/build_llama_cpp_from_source.sh
@@ -120,10 +123,11 @@ RUN ln -s /usr/local/cargo/bin/cargo /usr/local/bin/cargo \
     && ln -s /usr/local/cargo/bin/rustc /usr/local/bin/rustc \
     && ln -s /usr/local/cargo/bin/rustfmt /usr/local/bin/rustfmt \
     && ln -s /usr/local/cargo/bin/rustup /usr/local/bin/rustup
-RUN install_cuda_toolkit \
+RUN if [ "${INDIGO_LLAMA_BACKEND}" = cuda ]; then install_cuda_toolkit; \
+    elif [ "${INDIGO_LLAMA_BACKEND}" != cpu ]; then echo "unsupported llama backend: ${INDIGO_LLAMA_BACKEND}" >&2; exit 1; fi \
     && install -d -m 0755 -o "${USER_NAME}" -g "${USER_NAME}" "${MODEL_DIRECTORY}" "${HOME}/.config/llama-swap"
 RUN sed -i 's/\r$//' /tmp/build_llama_cpp_from_source.sh \
-    && bash /tmp/build_llama_cpp_from_source.sh \
+    && INDIGO_LLAMA_BACKEND="${INDIGO_LLAMA_BACKEND}" bash /tmp/build_llama_cpp_from_source.sh \
     && rm -f /tmp/build_llama_cpp_from_source.sh
 RUN install -d -m 0755 -o "${USER_NAME}" -g "${USER_NAME}" "${HOME}/.openviking" "${HOME}/.pinokio" \
     "${CARGO_HOME}" \

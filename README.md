@@ -46,6 +46,69 @@ The workspace, OpenViking state, Pinokio installations, Codex, and cargo cache a
 > This removes the runtime GPU request; the current image still includes CUDA.
 > macOS runs this image through Docker's Linux virtual machine and has no NVIDIA passthrough.
 
+### Apple Silicon with MLX
+
+The opt-in MLX mode runs model inference natively on macOS and keeps INDIGO's OpenAI-compatible endpoint at `http://127.0.0.1:10732/v1`.
+It requires an Apple Silicon Mac with macOS 14 or later, Docker Desktop, a native Python 3.11 or newer, and the ARM64 Notebook base image.
+`mlx-lm` accepts a local MLX-format model directory or a Hugging Face repo ID; a GGUF file is not an MLX model.
+
+Download and verify the model:
+
+```shell
+make mlx-model
+```
+
+`make mlx-model` installs the host MLX environment if needed, downloads `mlx-community/gpt-oss-20b-MXFP4-Q8` into `.indigo/models/`, and checks the model files.
+The download task contacts Hugging Face; it reuses files already present.
+`make mlx-model-check` checks the local model without internet.
+Use `MLX_MODEL_REPO` and `MLX_MODEL_DIR` to choose another MLX model.
+`MLX_MODEL` defaults to the downloaded directory but can still be set to a different local directory or Hugging Face repo ID.
+
+Start the host MLX service and the INDIGO image:
+
+```shell
+make up-mlx
+```
+
+`make up-mlx` starts a host `mlx-lm` user service, then builds and starts the CUDA-free ARM64 INDIGO image.
+The host service listens on port `10733` by default; INDIGO reaches it through Docker Desktop's `host.docker.internal`.
+Because `make up-mlx` builds the image, it may need internet for missing base images or build dependencies.
+
+Check the native MLX server:
+
+```shell
+curl http://127.0.0.1:10733/health
+```
+
+Port `10733` serves an API, not a web page: `/` returns `404 Not Found`.
+Use `/health` on that port to check the native server.
+
+Check INDIGO's routed API:
+
+```shell
+curl http://127.0.0.1:10732/v1/models
+```
+
+Use `/v1/models` on port `10732` to check INDIGO's routed API.
+
+Stop the host MLX service and the INDIGO container:
+
+```shell
+make down-mlx
+```
+
+The MLX server binds to all Mac network interfaces so Docker Desktop can reach it.
+Use a trusted network or a host firewall if the model endpoint should not be reachable by other devices.
+
+The Mac mode keeps separate router and OpenCode configurations, so it selects `indigo/mlx/default_model` on first start without replacing existing configuration.
+The port is configurable with `INDIGO_MLX_PORT` in `.env` and is offset for new instances.
+If you use a non-default Python installation, set `INDIGO_MLX_PYTHON` before setup.
+
+Display the host service (logs are in `.indigo/mlx/`):
+```shell
+make mlx-status
+```
+
 To select a model other than `gpt-oss-20b`, set `INDIGO_DEFAULT_MODEL` to a name made of letters, numbers, dots, underscores, and hyphens, and set `INDIGO_DEFAULT_MODEL_PATH` to its path inside the container.
 INDIGO writes the initial llama-swap and OpenCode configuration from those values and does not replace files that already exist.
 
