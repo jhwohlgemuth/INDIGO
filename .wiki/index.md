@@ -4,20 +4,19 @@ Updated 2026-10-22 from commit db2c536517837492b31007cf86688ec6b7e23fa3 with imp
 
 | Rank | Remaining outcome | Impact | Difficulty |
 | --- | --- | --- | --- |
-| 1 | [Make OpenViking host access explicit and secure](plans/openviking-access.md) | high | medium |
-| 2 | [Render model and workspace paths safely](plans/safe-config-rendering.md) | high | medium |
-| 3 | [Pin and verify build inputs](plans/reproducible-builds.md) | high | medium |
-| 4 | [Test service behavior before releasing images](plans/runtime-ci.md) | high | medium |
-| 5 | [Preserve router configuration and document recovery](plans/persistent-state.md) | high | medium |
-| 6 | [Verify platform support and a genuine CPU path](plans/platform-contract.md) | high | high |
-| 7 | [Make onboarding and release documentation consistent](plans/docs-onboarding.md) | medium | low |
-| 8 | [Make environment validation and instance creation dependable](plans/environment-validation.md) | medium | medium |
-| 9 | [Unify internal ports and generated client defaults](plans/port-and-agent-contracts.md) | medium | medium |
-| 10 | [Reduce measured build and idle resource costs](plans/build-and-runtime-efficiency.md) | medium | high |
+| 1 | [Make OpenViking host access explicit and secure](openviking-access.md) | high | medium |
+| 2 | [Render model and workspace paths safely](safe-config-rendering.md) | high | medium |
+| 3 | [Pin and verify build inputs](reproducible-builds.md) | high | medium |
+| 4 | [Test service behavior before releasing images](runtime-ci.md) | high | medium |
+| 5 | [Preserve router configuration and document recovery](persistent-state.md) | high | medium |
+| 6 | [Verify platform support and a genuine CPU path](platform-contract.md) | high | high |
+| 7 | [Make onboarding and release documentation consistent](docs-onboarding.md) | medium | low |
+| 8 | [Make environment validation and instance creation dependable](environment-validation.md) | medium | medium |
+| 9 | [Unify internal ports and generated client defaults](port-and-agent-contracts.md) | medium | medium |
+| 10 | [Reduce measured build and idle resource costs](build-and-runtime-efficiency.md) | medium | high |
 
 ## Navigation
 
-- [Plan directory](plans/index.md)
 - [Dependency network](plan-network.md)
 - [Parallel lanes, integration locks, and high impact launch order](parallel-execution.md)
 

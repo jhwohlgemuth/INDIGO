@@ -14,27 +14,27 @@ The next implementation handoff for each phase is its plan's `Outcome` and `Focu
 
 | Plan and phase | Primary lock | Eligibility |
 | --- | --- | --- |
-| [NET-02](plans/openviking-access.md) | openviking-access | Blocked: Docker host, private auth config and tenant user key |
-| [CFG-02](plans/safe-config-rendering.md) | mcp-launchers | Blocked: provisioned image or Docker host for live MCP validation |
-| [REP-01](plans/reproducible-builds.md) | image-build | Blocked: provisioned builder and upstream revision access |
-| [REP-02](plans/reproducible-builds.md) | image-build | Blocked: REP-01, registries and provisioned builder |
-| [REP-03](plans/reproducible-builds.md) | ci-workflow | In progress; Linux CI result pending |
-| [REP-04](plans/reproducible-builds.md) | image-build | Blocked: Homebrew sources and provisioned builder |
-| [TST-01](plans/runtime-ci.md) | ci-workflow | In progress; Linux CI result pending |
-| [TST-02](plans/runtime-ci.md) | ci-workflow | TST-01; GitHub Actions Docker runner and built image |
-| [TST-03](plans/runtime-ci.md) | inference-validation | Blocked: TST-02, approved small model fixture and CPU host |
-| [DAT-01](plans/persistent-state.md) | standalone-launch | Blocked: Docker host with disposable container and volume |
-| [DAT-02](plans/persistent-state.md) | runtime-docs | Blocked: DAT-01 and Docker host with disposable restore volumes |
-| [PLT-02](plans/platform-contract.md) | image-build | Blocked: REP-01, builder and approved CPU model fixture |
-| [DOC-01](plans/docs-onboarding.md) | runtime-docs | Ready once validation tools/fixtures are available |
-| [ENV-01](plans/environment-validation.md) | environment-contract | Ready once validation tools/fixtures are available |
-| [ENV-02](plans/environment-validation.md) | environment-contract | ENV-01 |
-| [PRT-01](plans/port-and-agent-contracts.md) | environment-contract | ENV-01 |
-| [PRT-02](plans/port-and-agent-contracts.md) | config-seeding | Ready; local config seeding fixtures |
-| [EFF-01](plans/build-and-runtime-efficiency.md) | performance-evidence | Accessible benchmark Docker host and fixed image input revisions |
-| [EFF-02](plans/build-and-runtime-efficiency.md) | image-build | EFF-01, REP-01; provisioned image builder |
-| [EFF-03](plans/build-and-runtime-efficiency.md) | ci-workflow | TST-02 |
-| [EFF-04](plans/build-and-runtime-efficiency.md) | runtime-docs | EFF-01, PRT-02; accessible benchmark Docker host |
+| [NET-02](openviking-access.md) | openviking-access | Blocked: Docker host, private auth config and tenant user key |
+| [CFG-02](safe-config-rendering.md) | mcp-launchers | Blocked: provisioned image or Docker host for live MCP validation |
+| [REP-01](reproducible-builds.md) | image-build | Blocked: provisioned builder and upstream revision access |
+| [REP-02](reproducible-builds.md) | image-build | Blocked: REP-01, registries and provisioned builder |
+| [REP-03](reproducible-builds.md) | ci-workflow | In progress; Linux CI result pending |
+| [REP-04](reproducible-builds.md) | image-build | Blocked: Homebrew sources and provisioned builder |
+| [TST-01](runtime-ci.md) | ci-workflow | In progress; Linux CI result pending |
+| [TST-02](runtime-ci.md) | ci-workflow | TST-01; GitHub Actions Docker runner and built image |
+| [TST-03](runtime-ci.md) | inference-validation | Blocked: TST-02, approved small model fixture and CPU host |
+| [DAT-01](persistent-state.md) | standalone-launch | Blocked: Docker host with disposable container and volume |
+| [DAT-02](persistent-state.md) | runtime-docs | Blocked: DAT-01 and Docker host with disposable restore volumes |
+| [PLT-02](platform-contract.md) | image-build | Blocked: REP-01, builder and approved CPU model fixture |
+| [DOC-01](docs-onboarding.md) | runtime-docs | Ready once validation tools/fixtures are available |
+| [ENV-01](environment-validation.md) | environment-contract | Ready once validation tools/fixtures are available |
+| [ENV-02](environment-validation.md) | environment-contract | ENV-01 |
+| [PRT-01](port-and-agent-contracts.md) | environment-contract | ENV-01 |
+| [PRT-02](port-and-agent-contracts.md) | config-seeding | Ready; local config seeding fixtures |
+| [EFF-01](build-and-runtime-efficiency.md) | performance-evidence | Accessible benchmark Docker host and fixed image input revisions |
+| [EFF-02](build-and-runtime-efficiency.md) | image-build | EFF-01, REP-01; provisioned image builder |
+| [EFF-03](build-and-runtime-efficiency.md) | ci-workflow | TST-02 |
+| [EFF-04](build-and-runtime-efficiency.md) | runtime-docs | EFF-01, PRT-02; accessible benchmark Docker host |
 
 Medium-impact PRT-02, ENV-01 and DOC-01 remain eligible in the wider portfolio. PRT-01 and ENV-01 remain ordered; EFF-03 and TST phases serialize through the CI lock.
 
