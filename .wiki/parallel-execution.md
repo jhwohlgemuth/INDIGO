@@ -4,11 +4,12 @@ This is a scheduling reference, not authorization to start agents or product cha
 
 ## High impact implementation queue
 
-Updated 2026-10-22 from commit db2c536517837492b31007cf86688ec6b7e23fa3 with local implementation changes. Health checks, model seeding, default OpenViking access documentation and standalone GPU selection passed focused local checks. CI workflow tool verification and service contract tests passed local checks; their Linux CI result is pending. The selected Docker context is unreachable, and neither Docker Desktop nor the local socket has a running daemon. Keep Docker-dependent phases blocked until a disposable host or CI runner can execute their focused validation. Do not treat a completed dry run as runtime evidence.
+Updated 2026-10-25 from commit e867187073fe14336eb13cc71c735be652eb5030. Health checks, model seeding, default OpenViking access documentation and standalone GPU selection passed focused local checks in the prior review. CI workflow tool verification and service contract tests passed local checks; their Linux CI result is pending. This workspace cannot access the selected Docker socket. Keep Docker-dependent phases blocked until a usable host or CI runner can execute their focused validation. Do not treat a completed dry run as runtime evidence.
 
 1. Review the Linux CI result for REP-03 and TST-01, repair any focused defects, then prune those phases. Their local checks have passed. PRT-02 is independently ready after safe first-run seeding landed.
 2. Provision a Docker image builder and disposable test resources. Then run REP-01 before PLT-02 or REP-02; run REP-04, DAT-01, and CFG-02 after their runtime fixtures are available. NET-02 requires a private OpenViking 0.4.17 auth fixture with a tenant user key. Keep overlapping README, Dockerfile, CI and dependency-update documentation edits serial.
 3. Run TST-02 after TST-01 on the GitHub Actions Docker runner. Run TST-03 only after an approved small model fixture and CPU host are available; its report must mark GPU inference unverified. DAT-02 follows DAT-01 and requires a separate disposable restore rehearsal. Recheck each phase's code baseline, exact write set, and five-hour budget before starting it.
+4. On an Apple Silicon Mac with Docker and an approved model, run PLT-03 and record routed MLX completion plus tool-call evidence. Only then start UZU-01; its later phases follow in order. Keep Uzu opt-in and do not announce support before UZU-05 passes.
 
 The next implementation handoff for each phase is its plan's `Outcome` and `Focused validation` pair. At completion, remove that phase, update the nearest index, network and this guide, and retain durable evidence in code, tests or user documentation.
 
@@ -26,6 +27,12 @@ The next implementation handoff for each phase is its plan's `Outcome` and `Focu
 | [DAT-01](persistent-state.md) | standalone-launch | Blocked: Docker host with disposable container and volume |
 | [DAT-02](persistent-state.md) | runtime-docs | Blocked: DAT-01 and Docker host with disposable restore volumes |
 | [PLT-02](platform-contract.md) | image-build | Blocked: REP-01, builder and approved CPU model fixture |
+| [PLT-03](platform-contract.md) | mac-inference-validation | Blocked: Apple Silicon Docker host, ARM64 base image and approved MLX model |
+| [UZU-01](uzu-support.md) | mac-inference-validation | Blocked: PLT-03, Apple Silicon host, usable Uzu checkpoint and upstream source/toolchain |
+| [UZU-02](uzu-support.md) | mac-host-runtime | UZU-01 and recorded source/toolchain/checkpoint contract |
+| [UZU-03](uzu-support.md) | router-config-seeding | UZU-02 |
+| [UZU-04](uzu-support.md) | mac-mode-orchestration | UZU-03 |
+| [UZU-05](uzu-support.md) | mac-inference-validation | UZU-04 and qualified Mac host/checkpoint |
 | [DOC-01](docs-onboarding.md) | runtime-docs | Ready once validation tools/fixtures are available |
 | [ENV-01](environment-validation.md) | environment-contract | Ready once validation tools/fixtures are available |
 | [ENV-02](environment-validation.md) | environment-contract | ENV-01 |

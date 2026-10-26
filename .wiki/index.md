@@ -1,6 +1,6 @@
 # INDIGO planning portfolio
 
-Updated 2026-10-22 from commit db2c536517837492b31007cf86688ec6b7e23fa3 with implementation changes pending Linux CI. This portfolio contains 10 executable plans, including six high impact plans. Sorting is impact descending, then difficulty ascending; ties favor user-visible correctness and stronger evidence. Difficulty is relative remaining engineering complexity, not elapsed duration. Every phase is capped at five active hours; larger plans have multiple phases.
+Updated 2026-10-25 from commit e867187073fe14336eb13cc71c735be652eb5030. This portfolio contains 11 executable plans, including six high impact plans. Sorting is impact descending, then difficulty ascending; ties favor user-visible correctness and stronger evidence. Difficulty is relative remaining engineering complexity, not elapsed duration. Every phase is capped at five active hours; larger plans have multiple phases. Apple Silicon Uzu support waits for recorded MLX runtime acceptance.
 
 | Rank | Remaining outcome | Impact | Difficulty |
 | --- | --- | --- | --- |
@@ -9,11 +9,12 @@ Updated 2026-10-22 from commit db2c536517837492b31007cf86688ec6b7e23fa3 with imp
 | 3 | [Pin and verify build inputs](reproducible-builds.md) | high | medium |
 | 4 | [Test service behavior before releasing images](runtime-ci.md) | high | medium |
 | 5 | [Preserve router configuration and document recovery](persistent-state.md) | high | medium |
-| 6 | [Verify platform support and a genuine CPU path](platform-contract.md) | high | high |
+| 6 | [Verify platform support, CPU inference, and Apple Silicon MLX](platform-contract.md) | high | high |
 | 7 | [Make onboarding and release documentation consistent](docs-onboarding.md) | medium | low |
 | 8 | [Make environment validation and instance creation dependable](environment-validation.md) | medium | medium |
 | 9 | [Unify internal ports and generated client defaults](port-and-agent-contracts.md) | medium | medium |
 | 10 | [Reduce measured build and idle resource costs](build-and-runtime-efficiency.md) | medium | high |
+| 11 | [Add optional Apple Silicon Uzu inference support](uzu-support.md) | medium | high |
 
 ## Navigation
 
@@ -32,5 +33,5 @@ Uses the [okf-plan-browser planning skill](https://github.com/jhwohlgemuth/okf-p
 
 ## Decisions retained for future execution
 
-Keep the current single-container development architecture; do not undertake a microservice rewrite. Keep OpenViking dev mode container-local and make authenticated host access opt-in. Treat native ARM64 and alternative GPU backends as future scope requiring separate evidence. Treat model acquisition as ACORN-owned. Prefer opt-in resource presets until measurements justify changing defaults.
+Keep the current single-container development architecture; do not undertake a microservice rewrite. Keep OpenViking dev mode container-local and make authenticated host access opt-in. The existing Apple Silicon MLX mode needs routed model-serving evidence before optional Uzu support begins. Other native ARM64 and GPU backends remain separate decisions. Treat model acquisition as ACORN-owned for existing modes; Uzu-format checkpoints are explicitly selected in its opt-in host mode. Prefer opt-in resource presets until measurements justify changing defaults.
 

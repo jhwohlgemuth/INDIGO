@@ -28,9 +28,18 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 - DAT-01: No feature prerequisite; accessible Docker host with disposable container and named volume
 - DAT-02: DAT-01; accessible Docker host with disposable test volumes
 
-## [Verify platform support and a genuine CPU path](platform-contract.md)
+## [Verify platform support, CPU inference, and Apple Silicon MLX](platform-contract.md)
 
 - PLT-02: REP-01; provisioned builder and approved CPU model fixture
+- PLT-03: Apple Silicon Mac, working Docker daemon, ARM64 Notebook base image and approved complete MLX-format model
+
+## [Add optional Apple Silicon Uzu inference support](uzu-support.md)
+
+- UZU-01: PLT-03; Apple Silicon Mac, usable Uzu-format checkpoint and upstream source/toolchain access
+- UZU-02: UZU-01 and its recorded immutable source/toolchain/checkpoint contract
+- UZU-03: UZU-02
+- UZU-04: UZU-03
+- UZU-05: UZU-04; qualified Mac/Docker host and approved checkpoint
 
 ## [Make onboarding and release documentation consistent](docs-onboarding.md)
 

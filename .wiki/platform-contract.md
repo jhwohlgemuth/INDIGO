@@ -1,7 +1,7 @@
 ---
 type: Plan
-title: Verify platform support and a genuine CPU path
-description: Users can identify tested host/architecture combinations; standalone Make commands support CPU mode; a CPU build target can serve a tiny model without CUDA dependencies.
+title: Verify platform support, CPU inference, and Apple Silicon MLX
+description: Users can identify tested host/architecture combinations; native MLX on Apple Silicon and a CUDA-free CPU image have recorded model-serving evidence.
 difficulty: high
 impact: high
 package: [indigo]
@@ -11,15 +11,15 @@ execution: phased
 phase_budget_hours: 5
 ---
 
-# Verify platform support and a genuine CPU path
+# Verify platform support, CPU inference, and Apple Silicon MLX
 
 ## Current evidence
 
-Rechecked 2026-10-22 at commit db2c536517837492b31007cf86688ec6b7e23fa3 with local changes. `make start GPU=0` and `make run GPU=0` now omit `--gpus all`; `tests/run-platform.sh` checks both modes. `docs/platform-support.md` distinguishes configuration and build evidence from runtime validation by host and architecture. `compose.cpu.yaml` only removes the GPU reservation. The image still installs a CUDA toolkit and builds the CUDA backend, so a CPU inference path remains unverified.
+Rechecked 2026-10-25 at commit e867187073fe14336eb13cc71c735be652eb5030. `make start GPU=0` and `make run GPU=0` omit `--gpus all`; `tests/run-platform.sh` checks both modes. `compose.cpu.yaml` only removes the GPU reservation. The default image still installs CUDA. The Apple Silicon path added in f896e15 uses a native `mlx-lm` server, an ARM64 CPU image, and a `llama-swap` peer, but `docs/platform-support.md` records no build or routed model-serving result. The current Docker socket is inaccessible from this workspace, so neither runtime path was verified during this plan update.
 
 ## Boundaries and decisions
 
-Use `GPU=0` as the standalone Make interface for omitting `--gpus all`; keep GPU mode as the default. Document tested host/architecture combinations separately from unverified emulation. Build an opt-in CPU image target without installing CUDA, while preserving the default GPU image target. Native ARM64 and new GPU backends remain separate future decisions. No Docker daemon was available for CPU inference verification.
+Use `GPU=0` as the standalone Make interface for omitting `--gpus all`; keep GPU mode as the default. Document tested host/architecture combinations separately from unverified emulation. Build an opt-in CPU image target without installing CUDA, while preserving the default GPU image target. Verify the existing native Apple Silicon MLX route before starting [optional Uzu support](uzu-support.md). Other native ARM64 and GPU backends remain separate decisions.
 
 ## Dependencies
 
@@ -27,7 +27,7 @@ Phase prerequisites below are the authoritative blockers. Shared integration loc
 
 ## Acceptance criteria
 
-Users can identify tested host/architecture combinations; standalone Make commands support CPU mode; a CPU build target can serve a tiny model without CUDA dependencies.
+Users can identify tested host/architecture combinations; standalone Make commands support CPU mode; a CPU build target can serve a tiny model without CUDA dependencies; the Apple Silicon MLX path has a recorded routed streaming completion and tool-call round trip.
 
 ## Validation
 
@@ -45,4 +45,15 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 - Outcome: Split common runtime setup from GPU and CPU targets, keep the GPU target as the default, and make `compose.cpu-build.yaml` select the CPU target together with `compose.cpu.yaml`.
 - Focused validation: Build the CPU target and inspect dependencies for CUDA requirements; serve the approved small model on a CPU-only Docker host; compare artifact size.
 - Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
+
+## PLT-03 — Verify the native Apple Silicon MLX route
+
+- Status: blocked
+- Budget: 5 active hours maximum
+- Prerequisites: Apple Silicon Mac with a working Docker daemon, the ARM64 Notebook base image, and a complete approved MLX-format model; host and download availability are external waiting
+- Exact write set: `scripts/mlx-acceptance.sh`, `docs/platform-support.md`
+- Primary integration lock: mac-inference-validation
+- Outcome: Add a repeatable host acceptance command and record a successful native MLX to container router to client path, or retain this phase with the precise failure. This recorded success is the required gate for UZU-01.
+- Focused validation: Build and start `make up-mlx`; verify native `/health`, routed `/v1/models`, a streamed `/v1/chat/completions` reply, and a complete tool-call plus tool-result round trip through port 10732. Check stop and restart without replacing existing router/client config. Record macOS/SoC/RAM, image digest, `mlx-lm` version, model ID/hash, commands and results in `docs/platform-support.md`; use only test-owned state.
+- Handoff: Keep the MLX result in durable platform documentation, remove PLT-03 only after every acceptance check passes, and replace UZU-01's phase-ID prerequisite with the recorded evidence when updating the network and parallel guide. If a check fails, retain PLT-03 and create a bounded repair phase instead of declaring the gate satisfied.
 
