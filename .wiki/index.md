@@ -1,6 +1,6 @@
 # INDIGO planning portfolio
 
-Updated 2026-10-25 from commit e867187073fe14336eb13cc71c735be652eb5030. This portfolio contains 11 executable plans, including six high impact plans. Sorting is impact descending, then difficulty ascending; ties favor user-visible correctness and stronger evidence. Difficulty is relative remaining engineering complexity, not elapsed duration. Every phase is capped at five active hours; larger plans have multiple phases. Apple Silicon Uzu support waits for recorded MLX runtime acceptance.
+Updated 2026-10-27. This portfolio contains 11 executable plans, including six high impact plans. Sorting is impact descending, then difficulty ascending; ties favor user-visible correctness and stronger evidence. Difficulty is relative remaining engineering complexity, not elapsed duration. Every phase is capped at five active hours; larger plans have multiple phases. Apple Silicon Uzu support waits for recorded MLX runtime acceptance; the current run failed streaming and tool-call checks.
 
 | Rank | Remaining outcome | Impact | Difficulty |
 | --- | --- | --- | --- |
@@ -25,7 +25,7 @@ Updated 2026-10-25 from commit e867187073fe14336eb13cc71c735be652eb5030. This po
 
 Inspected all tracked application scripts, service definitions, image/build configuration, agent/router templates, CI and user/architecture documentation. No CodeGraph directory exists. The initial worktree was clean. Recent history includes the portability merge, user-story work and source-built inference support; recommendations account for existing CPU/isolated overrides, loopback publishing, pinned Pinokio and bounded OpenViking retries. Local implementation now includes bounded parallel health checks, safe model config seeding, corrected OpenViking access documentation, standalone GPU selection, shell contract tests and pinned CI tools.
 
-All four Compose combinations passed config --quiet during the portfolio review and local lint run: base, CPU, isolated, CPU plus isolated. The current selected Docker context is unreachable; Docker Desktop and the local socket have no running daemon. Local `make check` and `make lint` pass, but Linux CI and image/runtime validation remain pending. No inference benchmark or energy measurement was performed. High impact phases that require Docker verification are marked blocked. Runtime claims derived from source are identified as such in the plans. Review is not a vulnerability audit or a measured performance assessment.
+All four Compose combinations passed config --quiet during the prior portfolio review; the MLX Compose override rendered on 2026-10-27. Docker Desktop is now available. The pinned ARM64 image built and native MLX plus router discovery passed, while routed streaming, structured tool calls, and code-server health failed as recorded in `docs/platform-support.md`. Local `make check`, `make lint` (using yamllint installed in temporary storage), and ARM64 image content smoke pass. A new Linux CI result remains pending. No inference benchmark or energy measurement was performed. Runtime claims derived from source are identified as such in the plans. Review is not a vulnerability audit or a measured performance assessment.
 
 ## Planning convention
 

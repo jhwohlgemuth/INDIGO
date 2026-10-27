@@ -6,7 +6,7 @@ difficulty: high
 impact: high
 package: [indigo]
 tags: [platform-contract, project-review]
-status: planned
+status: in-progress
 execution: phased
 phase_budget_hours: 5
 ---
@@ -15,7 +15,7 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Rechecked 2026-10-25 at commit e867187073fe14336eb13cc71c735be652eb5030. `make start GPU=0` and `make run GPU=0` omit `--gpus all`; `tests/run-platform.sh` checks both modes. `compose.cpu.yaml` only removes the GPU reservation. The default image still installs CUDA. The Apple Silicon path added in f896e15 uses a native `mlx-lm` server, an ARM64 CPU image, and a `llama-swap` peer, but `docs/platform-support.md` records no build or routed model-serving result. The current Docker socket is inaccessible from this workspace, so neither runtime path was verified during this plan update.
+Rechecked 2026-10-27. `make start GPU=0` and `make run GPU=0` omit `--gpus all`; `tests/run-platform.sh` checks both modes. `compose.cpu.yaml` only removes the GPU reservation. The default image still installs CUDA. The Apple Silicon path built from the pinned Notebook 1.0.5 ARM64 base and reached native MLX plus the router. [Platform evidence](../docs/platform-support.md) records raw model control tokens in streamed output, a textual tool call with no `tool_calls`, and an inherited x86-64 code-server Node binary that prevents full container health. No routed model-serving acceptance has passed.
 
 ## Boundaries and decisions
 
@@ -50,10 +50,32 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 - Status: blocked
 - Budget: 5 active hours maximum
-- Prerequisites: Apple Silicon Mac with a working Docker daemon, the ARM64 Notebook base image, and a complete approved MLX-format model; host and download availability are external waiting
-- Exact write set: `scripts/mlx-acceptance.sh`, `docs/platform-support.md`
+- Prerequisites: PLT-04 and PLT-05; Apple Silicon Mac with a working Docker daemon and complete approved MLX-format model
+- Exact write set: `scripts/mlx-acceptance.py`, `docs/platform-support.md`
 - Primary integration lock: mac-inference-validation
 - Outcome: Add a repeatable host acceptance command and record a successful native MLX to container router to client path, or retain this phase with the precise failure. This recorded success is the required gate for UZU-01.
 - Focused validation: Build and start `make up-mlx`; verify native `/health`, routed `/v1/models`, a streamed `/v1/chat/completions` reply, and a complete tool-call plus tool-result round trip through port 10732. Check stop and restart without replacing existing router/client config. Record macOS/SoC/RAM, image digest, `mlx-lm` version, model ID/hash, commands and results in `docs/platform-support.md`; use only test-owned state.
-- Handoff: Keep the MLX result in durable platform documentation, remove PLT-03 only after every acceptance check passes, and replace UZU-01's phase-ID prerequisite with the recorded evidence when updating the network and parallel guide. If a check fails, retain PLT-03 and create a bounded repair phase instead of declaring the gate satisfied.
+- Handoff: Keep the MLX result in durable platform documentation, remove PLT-03 only after every acceptance check passes, and replace UZU-01's phase-ID prerequisite with the recorded evidence when updating the network and parallel guide. The 2026-10-27 check failed; PLT-04 and PLT-05 track the separate repairs.
+
+## PLT-04 — Restore clean streamed output and structured MLX tool calls
+
+- Status: ready
+- Budget: 5 active hours maximum
+- Prerequisites: Apple Silicon Mac and an approved tool-capable MLX checkpoint; the failing GPT-OSS fixture is already available
+- Exact write set: `scripts/mlx-host.sh`, `scripts/mlx-acceptance.py`, `tests/mlx-host.sh`, `docs/platform-support.md`
+- Primary integration lock: mac-inference-validation
+- Outcome: Determine whether the pinned `mlx-lm` server, the checkpoint template, or their combination causes raw channel markers and textual tool invocations. Select and record a compatible server/checkpoint contract without rewriting user model files or accepting malformed API output.
+- Focused validation: Reproduce both failures through port 10732, then run the same streamed completion and tool-call/tool-result checks with the corrected contract. Record server version, checkpoint hashes, exact request/response shape, and any version or model change.
+- Handoff: Preserve the passing or failing protocol evidence in platform documentation. Remove this phase only when the structured API contract passes; then unblock PLT-03's client and restart checks.
+
+## PLT-05 — Correct the inherited ARM64 code-server bundle
+
+- Status: blocked
+- Budget: 5 active hours maximum
+- Prerequisites: Access to the Notebook image build/release system and an ARM64 Docker validation host
+- Exact write set: `jhwohlgemuth/notebook` image build and release, plus INDIGO `.env`, `Dockerfile`, `docs/dependency-updates.md`, `docs/platform-support.md`
+- Primary integration lock: image-build
+- Outcome: Publish or select a Notebook ARM64 base whose code-server Node executable is ARM64, then update INDIGO's reviewed tag and digest pair.
+- Focused validation: Inspect the executable's ELF machine ID in the new base, rebuild the INDIGO ARM64 image, and run `make runtime-smoke IMAGE_REF=ghcr.io/jhwohlgemuth/indigo:0.1.4-mlx-arm64` to verify code-server and all default services reach health.
+- Handoff: Record the new base and image digests plus the passing startup result. Remove this phase only after the ARM64 runtime passes, then unblock PLT-03.
 

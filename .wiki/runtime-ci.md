@@ -6,7 +6,7 @@ difficulty: medium
 impact: high
 package: [indigo]
 tags: [runtime-ci, project-review]
-status: planned
+status: in-progress
 execution: phased
 phase_budget_hours: 5
 ---
@@ -15,11 +15,11 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Rechecked 2026-10-22 at commit db2c536517837492b31007cf86688ec6b7e23fa3 with local changes. `.github/workflows/container.yml` now installs lint tools and runs `make check` and `make lint` before image build. `tests/service-contracts.sh` checks disabled-service flags, missing OpenViking config, bounded retry and server arguments; Makefile includes shell tests. The image smoke target still checks executable/config presence through an overridden entrypoint, so it never boots /init. Architecture documentation correctly notes that router health is not proof of inference.
+Rechecked 2026-10-27. The published Linux CI run at commit 24cc8de failed shellcheck SC2310 in `scripts/check.sh`; the local repair passes `make check`, and a new CI result is pending. The workflow now calls `make runtime-smoke` after the image smoke. This boots `/init` in a disposable container and checks full health, seeded config, and shutdown. A local pinned ARM64 run failed because the inherited code-server bundle contains an x86-64 Node binary; the Linux amd64 workflow has not run with this new step. Router health is not model-serving proof.
 
 ## Boundaries and decisions
 
-Keep cheap shell/config tests on every PR; install their lint tools in CI. Add a CPU boot integration path in the existing image workflow and a separate manually triggered real-model job. Label GPU inference unverified until separately measured. No local Docker daemon was available.
+Keep cheap shell/config tests on every PR; install their lint tools in CI. Verify the CPU boot integration path in the existing image workflow and add a separate manually triggered real-model job. Label GPU inference unverified until separately measured.
 
 ## Dependencies
 
@@ -44,18 +44,18 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 - Primary integration lock: ci-workflow
 - Outcome: Install required lint tools and run `make check`, `make lint`, and fixture-based service contract tests before image build in Linux CI.
 - Focused validation: Use fixtures for enable flags, missing/invalid OpenViking config and bounded retries; run shellcheck, shfmt, hadolint, yamllint and all four Compose renderings.
-- Handoff: `tests/service-contracts.sh`, `.github/workflows/container.yml` and `Makefile` changed. Local service fixtures, `make check` and `make lint` passed, including shellcheck, shfmt, hadolint, yamllint and all four Compose renderings. Review the Linux workflow result, repair any focused defect, then remove TST-01 and reconcile the wiki.
+- Handoff: Local `make check` passes after the SC2310 repair. Review the next Linux workflow result, repair any focused defect, then remove TST-01 and reconcile the wiki.
 
 ## TST-02 — Boot and stop a disposable CPU container in CI
 
-- Status: planned
+- Status: in-progress
 - Budget: 5 active hours maximum
 - Prerequisites: TST-01; GitHub Actions Docker runner and image built by the workflow
 - Exact write set: `scripts/runtime-smoke.sh`, `.github/workflows/container.yml`, `Makefile`
 - Primary integration lock: ci-workflow
 - Outcome: Verify real service lifecycle with a bounded CI timeout.
 - Focused validation: Boot through /init, inspect health, execute MCP initialization/list-tools, stop within the configured grace period and collect failure logs; always clean only test-owned resources.
-- Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
+- Handoff: `scripts/runtime-smoke.sh`, the Make target, and the Linux workflow step are added. The local ARM64 run fails only code-server health; PLT-05 tracks that architecture defect. Keep this phase until the Linux amd64 workflow passes startup and shutdown plus the remaining MCP initialization/list-tools check.
 
 ## TST-03 — Add an explicit model-serving acceptance job
 

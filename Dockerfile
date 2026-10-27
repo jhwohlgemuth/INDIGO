@@ -1,4 +1,5 @@
 ARG NOTEBOOK_VERSION=1.0.5
+ARG NOTEBOOK_DIGEST=sha256:c3256bd1d46ffd71f6c7b95cc0da7cca1c2ddc417070f3a7622bd557838be7dd
 ARG PINOKIO_NODE_VERSION=20
 ARG PINOKIO_COMMIT=2c39f9fe9c40c985e03b13ab8a48ead908139b39
 ARG MCP_NODE_VERSION=24
@@ -35,7 +36,7 @@ ARG RUST_ANALYZER_MCP_VERSION=0.4.0
 RUN rustup component add rust-analyzer rust-src \
     && cargo install --locked --version "${RUST_ANALYZER_MCP_VERSION}" rust-analyzer-mcp
 
-FROM ghcr.io/jhwohlgemuth/notebook:${NOTEBOOK_VERSION}
+FROM ghcr.io/jhwohlgemuth/notebook:${NOTEBOOK_VERSION}@${NOTEBOOK_DIGEST}
 #
 # %labels
 #

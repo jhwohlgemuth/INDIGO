@@ -6,7 +6,7 @@ difficulty: medium
 impact: high
 package: [indigo]
 tags: [reproducible-builds, project-review]
-status: planned
+status: in-progress
 execution: phased
 phase_budget_hours: 5
 ---
@@ -15,7 +15,7 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Rechecked 2026-10-22 at commit db2c536517837492b31007cf86688ec6b7e23fa3 with local changes. `scripts/build_llama_cpp_from_source.sh:67` clones llama.cpp default HEAD without checkout. `Dockerfile:149` installs current Homebrew hf and llama-swap. Image references are mutable tags. CI now pins checkout to a full commit and verifies shfmt v3.11.0 before installation; `docs/dependency-updates.md` records both inputs and the update process. Pinokio's source commit and npm ci already provide useful partial pinning.
+Rechecked 2026-10-27. `scripts/build_llama_cpp_from_source.sh` still clones llama.cpp default HEAD without checkout, and Homebrew installs current hf and llama-swap. The direct Notebook base is now pinned to the published 1.0.5 multi-platform index digest, and the ARM64 image built from it; other OCI bases remain mutable. CI pins checkout to a full commit and verifies shfmt v3.11.0 before installation, but the latest published Linux run failed shellcheck SC2310. A local fix passes `make check`; a new CI result is pending. `docs/dependency-updates.md` records the current pin and update process.
 
 ## Boundaries and decisions
 

@@ -10,7 +10,7 @@ ifneq ($(ENV_FILE),)
 include $(ENV_FILE)
 endif
 
-.PHONY: prepare format check check-env lint build image-smoke push compose-build up up-cpu up-isolated up-mlx down down-mlx mlx-setup mlx-model mlx-model-download mlx-model-check mlx-model-self-test mlx-status restart logs ps filesystem rust instance start run stop rm exec
+.PHONY: prepare format check check-env lint build image-smoke runtime-smoke push compose-build up up-cpu up-isolated up-mlx down down-mlx mlx-setup mlx-model mlx-model-download mlx-model-check mlx-model-self-test mlx-status restart logs ps filesystem rust instance start run stop rm exec
 
 COMPOSE ?= docker compose
 YAMLLINT ?= yamllint
@@ -190,13 +190,17 @@ exec:
 build:
 	@docker build \
 		--build-arg NOTEBOOK_VERSION="${NOTEBOOK_VERSION}" \
+		--build-arg NOTEBOOK_DIGEST="${NOTEBOOK_DIGEST}" \
 		--tag "${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:${VERSION}" \
 		--tag "${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:latest" \
 		.
 
 image-smoke:
 	@docker run --rm --entrypoint /bin/bash "${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:${VERSION}" \
-		-lc 'test -x /healthcheck && command -v llama-swap && command -v llama-server && test -r /etc/indigo/defaults/llama-swap.yaml'
+		-lc 'test -x /healthcheck && test -x /home/linuxbrew/.linuxbrew/bin/llama-swap && command -v llama-server && test -r /etc/indigo/defaults/llama-swap.yaml'
+
+runtime-smoke:
+	@./scripts/runtime-smoke.sh "$(IMAGE_REF)"
 
 push:
 	@docker push "${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:${VERSION}"

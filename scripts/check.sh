@@ -17,6 +17,7 @@ required=(
     REGISTRY_PROJECT
     IMAGE
     NOTEBOOK_VERSION
+    NOTEBOOK_DIGEST
     INDIGO_HOSTNAME
     PINOKIO_DOMAIN
     INDIGO_SHM_SIZE
@@ -63,7 +64,14 @@ for key in "${required[@]}"; do
     fi
 done
 
-if [[ "$(count_of INDIGO_MLX_PORT)" -gt 1 ]]; then
+notebook_digest="$(value_of NOTEBOOK_DIGEST)"
+if [[ ! "${notebook_digest}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+    echo "error: NOTEBOOK_DIGEST must be a sha256 digest in ${env_file}" >&2
+    status=1
+fi
+
+mlx_port_occurrences="$(count_of INDIGO_MLX_PORT)"
+if [[ "${mlx_port_occurrences}" -gt 1 ]]; then
     echo "error: INDIGO_MLX_PORT is defined more than once in ${env_file}" >&2
     status=1
 fi

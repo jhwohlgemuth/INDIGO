@@ -1,3 +1,4 @@
+---
 healthCheckTimeout: 500
 logToStdout: "none"
 proxy:

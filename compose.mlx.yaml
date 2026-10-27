@@ -2,7 +2,8 @@
 # Apple Silicon mode: the MLX server runs on macOS and Indigo routes to it.
 services:
   indigo:
-    image: "${REGISTRY:?}/${REGISTRY_PROJECT:?}/${IMAGE:?}:${VERSION:?}-mlx-arm64"
+    image: >-
+      ${REGISTRY:?}/${REGISTRY_PROJECT:?}/${IMAGE:?}:${VERSION:?}-mlx-arm64
     build:
       args:
         NOTEBOOK_VERSION: "${NOTEBOOK_VERSION:?}"

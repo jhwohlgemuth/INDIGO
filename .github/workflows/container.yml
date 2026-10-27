@@ -49,6 +49,8 @@ jobs:
         run: make build
       - name: Smoke test image contents
         run: make image-smoke
+      - name: Boot and stop disposable container
+        run: make runtime-smoke
 
   windows-config:
     runs-on: windows-latest

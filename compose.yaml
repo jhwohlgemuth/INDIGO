@@ -16,6 +16,7 @@ services:
       context: .
       args:
         NOTEBOOK_VERSION: "${NOTEBOOK_VERSION:?}"
+        NOTEBOOK_DIGEST: "${NOTEBOOK_DIGEST:?}"
     hostname: "${INDIGO_HOSTNAME:?}"
     restart: *restart-policy
     stdin_open: true

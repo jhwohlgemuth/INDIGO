@@ -19,7 +19,17 @@ record its SHA-256, update the workflow, and run `make check` and `make lint`.
 For the formatter, verify that changing one byte makes the digest check fail.
 Review the Linux and Windows workflow results before merging the update.
 
-The image's inference source, OCI base images, and Homebrew versions have
+INDIGO uses `ghcr.io/jhwohlgemuth/notebook:1.0.5` as its direct base. On
+2026-10-27, its published multi-platform index resolved to
+`sha256:c3256bd1d46ffd71f6c7b95cc0da7cca1c2ddc417070f3a7622bd557838be7dd`.
+The index contains Linux amd64 and arm64 manifests. `NOTEBOOK_VERSION` and
+`NOTEBOOK_DIGEST` in `.env` select this pair for Compose and Make builds; the
+Dockerfile repeats it as the default for direct builds. Update both values
+together after inspecting the published manifest and testing the resulting
+INDIGO image on the intended architectures. Gold remains a separate image and
+Terminal is inherited through Notebook, so INDIGO does not pin them directly.
+
+The inference source, other OCI base images, and Homebrew versions have
 separate remaining phases in the planning portfolio. This record does not claim
 bit-for-bit reproducible images while those inputs and transitive packages can
 still change.

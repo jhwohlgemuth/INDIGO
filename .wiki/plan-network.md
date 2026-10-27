@@ -31,7 +31,9 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 ## [Verify platform support, CPU inference, and Apple Silicon MLX](platform-contract.md)
 
 - PLT-02: REP-01; provisioned builder and approved CPU model fixture
-- PLT-03: Apple Silicon Mac, working Docker daemon, ARM64 Notebook base image and approved complete MLX-format model
+- PLT-03: PLT-04, PLT-05; Apple Silicon Mac, working Docker daemon and approved complete MLX-format model
+- PLT-04: Apple Silicon Mac and approved tool-capable MLX checkpoint
+- PLT-05: Notebook image build/release access and ARM64 Docker validation host
 
 ## [Add optional Apple Silicon Uzu inference support](uzu-support.md)
 
