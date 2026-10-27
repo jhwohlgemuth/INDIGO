@@ -65,7 +65,8 @@ main() {
     if [[ "${backend}" == cuda ]]; then
         BACKEND_ARGS=(-DGGML_NATIVE=OFF -DGGML_CUDA=ON -DGGML_CPU_ALL_VARIANTS=ON -DCMAKE_CUDA_COMPILER="$(command -v nvcc)")
     else
-        BACKEND_ARGS=(-DGGML_NATIVE=ON -DGGML_CUDA=OFF -DGGML_CPU_ALL_VARIANTS=OFF -DLLAMA_USE_PREBUILT_UI=OFF)
+        # Dynamic CPU backends on x86 require a portable build rather than GGML_NATIVE.
+        BACKEND_ARGS=(-DGGML_NATIVE=OFF -DGGML_CUDA=OFF -DGGML_CPU_ALL_VARIANTS=OFF -DLLAMA_USE_PREBUILT_UI=OFF)
         BUILD_TARGET_ARGS=(--target llama-cli llama-server)
     fi
     if [[ -n "${CMAKE_ARGS:-}" ]]; then
