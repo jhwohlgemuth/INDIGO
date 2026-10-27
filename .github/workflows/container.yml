@@ -54,8 +54,22 @@ jobs:
       - name: Build CPU validation image
         timeout-minutes: 60
         run: |
+          touch /tmp/indigo-build.log
+          (
+            while sleep 90; do
+              disk="$(df -Pk / | awk 'NR==2 {print $4}')"
+              memory="$(free -m | awk 'NR==2 {print $7}')"
+              progress="$(tail -n 1 /tmp/indigo-build.log |
+                tr '\r\n' '  ' | cut -c1-200)"
+              detail="disk_free_kb=${disk} memory_available_mb=${memory}"
+              echo "::notice title=CPU build heartbeat::${detail} ${progress}"
+            done
+          ) &
+          heartbeat_pid=$!
+          trap 'kill "${heartbeat_pid}" 2>/dev/null || true' EXIT
           set +e
-          make build INDIGO_LLAMA_BACKEND=cpu 2>&1 | tee /tmp/indigo-build.log
+          BUILDKIT_PROGRESS=plain make build INDIGO_LLAMA_BACKEND=cpu \
+            INDIGO_LLAMA_BUILD_JOBS=1 2>&1 | tee /tmp/indigo-build.log
           build_status=${PIPESTATUS[0]}
           set -e
           if [ "${build_status}" -ne 0 ]; then

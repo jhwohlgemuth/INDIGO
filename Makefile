@@ -27,6 +27,7 @@ INDIGO_HOME ?= /home/nonroot
 GPU ?= 1
 GPU_ARGS = $(if $(filter 0,$(GPU)),,--gpus all)
 INDIGO_LLAMA_BACKEND ?= cuda
+INDIGO_LLAMA_BUILD_JOBS ?= 2
 MLX_MODEL_REPO ?= mlx-community/gpt-oss-20b-MXFP4-Q8
 MLX_MODEL_DIR ?= $(CURDIR)/.indigo/models/$(notdir $(MLX_MODEL_REPO))
 MLX_MODEL ?= $(MLX_MODEL_DIR)
@@ -193,6 +194,7 @@ build:
 		--build-arg NOTEBOOK_VERSION="${NOTEBOOK_VERSION}" \
 		--build-arg NOTEBOOK_DIGEST="${NOTEBOOK_DIGEST}" \
 		--build-arg INDIGO_LLAMA_BACKEND="$(INDIGO_LLAMA_BACKEND)" \
+		--build-arg INDIGO_LLAMA_BUILD_JOBS="$(INDIGO_LLAMA_BUILD_JOBS)" \
 		--tag "${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:${VERSION}" \
 		--tag "${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:latest" \
 		.
