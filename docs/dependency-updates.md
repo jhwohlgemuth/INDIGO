@@ -7,6 +7,9 @@ The Container workflow uses `actions/checkout` v4.4.0 at commit
 The Linux CI formatter is shfmt v3.11.0. Its `linux_amd64` release asset has
 SHA-256 `1904ec6bac715c1d05cd7f6612eec8f67a625c3749cb327e5bfb4127d09035ff`.
 The workflow checks the digest before installing the binary.
+The [2026-10-27 Container run](https://github.com/jhwohlgemuth/INDIGO/actions/runs/40573556693)
+passed the shfmt installation, shell checks, and lint steps before the hosted
+runner lost communication during image build.
 
 Linux CI runs Hadolint v2.15.1 from the `linux/amd64` container image at
 `ghcr.io/hadolint/hadolint:v2.15.1-debian@sha256:aacf4eda44e40057051f5c5b02546e3ada7e8b84d4bbf9312c89524a7e9a0b51`.

@@ -14,13 +14,11 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 
 - REP-01: No feature prerequisite; provisioned image builder and access to the selected upstream revision
 - REP-02: REP-01; access to upstream registries and a provisioned image builder
-- REP-03: No feature prerequisite.
 - REP-04: No feature prerequisite; access to Homebrew sources and a provisioned image builder
 
 ## [Test service behavior before releasing images](runtime-ci.md)
 
-- TST-01: No feature prerequisite.
-- TST-02: TST-01; GitHub Actions Docker runner and image built by the workflow
+- TST-02: GitHub Actions Docker runner and image built by the workflow
 - TST-03: TST-02; approved small model fixture and available CPU validation host
 
 ## [Preserve router configuration and document recovery](persistent-state.md)

@@ -2,7 +2,7 @@
 
 Indigo currently publishes one Linux image that installs a CUDA toolkit and builds a CUDA-capable `llama-server`.
 Disabling a runtime GPU reservation does not remove those image dependencies.
-The CI workflow builds on an Ubuntu runner, checks Compose rendering on Windows, and now includes a disposable startup smoke check. Its new startup step has not yet run on Linux CI. It does not serve a model.
+The CI workflow builds a CPU validation image on an Ubuntu runner, checks Compose rendering on Windows, and includes a disposable startup smoke check. This checks startup without requiring a CUDA toolkit or GPU on the hosted runner; it does not validate the default CUDA image or serve a model.
 The Apple Silicon run below reached native MLX and the container router but failed model-serving acceptance.
 
 ## Evidence matrix

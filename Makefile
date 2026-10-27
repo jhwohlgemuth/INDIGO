@@ -26,6 +26,7 @@ IMAGE_REF ?= ${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:${VERSION}
 INDIGO_HOME ?= /home/nonroot
 GPU ?= 1
 GPU_ARGS = $(if $(filter 0,$(GPU)),,--gpus all)
+INDIGO_LLAMA_BACKEND ?= cuda
 MLX_MODEL_REPO ?= mlx-community/gpt-oss-20b-MXFP4-Q8
 MLX_MODEL_DIR ?= $(CURDIR)/.indigo/models/$(notdir $(MLX_MODEL_REPO))
 MLX_MODEL ?= $(MLX_MODEL_DIR)
@@ -191,12 +192,13 @@ build:
 	@docker build \
 		--build-arg NOTEBOOK_VERSION="${NOTEBOOK_VERSION}" \
 		--build-arg NOTEBOOK_DIGEST="${NOTEBOOK_DIGEST}" \
+		--build-arg INDIGO_LLAMA_BACKEND="$(INDIGO_LLAMA_BACKEND)" \
 		--tag "${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:${VERSION}" \
 		--tag "${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:latest" \
 		.
 
 image-smoke:
-	@docker run --rm --entrypoint /bin/bash "${REGISTRY}/${REGISTRY_PROJECT}/${IMAGE}:${VERSION}" \
+	@docker run --rm --entrypoint /bin/bash "$(IMAGE_REF)" \
 		-lc 'test -x /healthcheck && test -x /home/linuxbrew/.linuxbrew/bin/llama-swap && command -v llama-server && test -r /etc/indigo/defaults/llama-swap.yaml'
 
 runtime-smoke:

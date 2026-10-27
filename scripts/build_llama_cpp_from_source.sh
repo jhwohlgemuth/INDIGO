@@ -6,6 +6,11 @@ requires \
     git \
     ldd
 backend="${INDIGO_LLAMA_BACKEND:-cuda}"
+build_jobs="${INDIGO_LLAMA_BUILD_JOBS:-2}"
+if [[ ! "${build_jobs}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "error: INDIGO_LLAMA_BUILD_JOBS must be a positive integer" >&2
+    exit 1
+fi
 if [[ "${backend}" == cuda ]]; then
     requires nvcc
 elif [[ "${backend}" != cpu ]]; then
@@ -71,11 +76,12 @@ main() {
         "${BACKEND_ARGS[@]}" \
         -DGGML_BACKEND_DL=ON \
         -DLLAMA_BUILD_TESTS=OFF \
+        -DLLAMA_USE_PREBUILT_UI=OFF \
         "${CMAKE_ARGS_ARRAY[@]}" \
         -DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined \
         -DCMAKE_BUILD_TYPE=Release \
         .
-    cmake --build build --config Release -j"$(nproc)"
+    cmake --build build --config Release --target llama-cli llama-server --parallel "${build_jobs}"
     popd > /dev/null || exit
 
     install_shared_objects

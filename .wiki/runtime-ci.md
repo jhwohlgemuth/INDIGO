@@ -15,7 +15,7 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Rechecked 2026-10-27. The published Linux CI run at commit 24cc8de failed shellcheck SC2310 in `scripts/check.sh`; the local repair passes `make check`, and a new CI result is pending. The workflow now calls `make runtime-smoke` after the image smoke. This boots `/init` in a disposable container and checks full health, seeded config, and shutdown. A local pinned ARM64 run failed because the inherited code-server bundle contains an x86-64 Node binary; the Linux amd64 workflow has not run with this new step. Router health is not model-serving proof.
+Rechecked 2026-10-27 at commit 687a306. The [published Linux CI run](https://github.com/jhwohlgemuth/INDIGO/actions/runs/40573556693) passed installation, `make check`, and `make lint`, then lost the hosted runner while building the full image. Windows configuration passed. The workflow now builds a CPU validation image with bounded llama.cpp compilation and frees unused runner toolchains before build; its new Linux result is pending. The startup smoke boots `/init` in a disposable container and checks full health, seeded config, and shutdown. A local pinned ARM64 run failed because the inherited code-server bundle contains an x86-64 Node binary. Router health is not model-serving proof.
 
 ## Boundaries and decisions
 
@@ -35,27 +35,16 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 # Execution phases
 
-## TST-01 — Run shell behavior and lint checks in CI
-
-- Status: in-progress
-- Budget: 5 active hours maximum
-- Prerequisites: none
-- Exact write set: `tests/service-contracts.sh`, `.github/workflows/container.yml`, `Makefile`
-- Primary integration lock: ci-workflow
-- Outcome: Install required lint tools and run `make check`, `make lint`, and fixture-based service contract tests before image build in Linux CI.
-- Focused validation: Use fixtures for enable flags, missing/invalid OpenViking config and bounded retries; run shellcheck, shfmt, hadolint, yamllint and all four Compose renderings.
-- Handoff: Local `make check` passes after the SC2310 repair. Review the next Linux workflow result, repair any focused defect, then remove TST-01 and reconcile the wiki.
-
 ## TST-02 — Boot and stop a disposable CPU container in CI
 
 - Status: in-progress
 - Budget: 5 active hours maximum
-- Prerequisites: TST-01; GitHub Actions Docker runner and image built by the workflow
+- Prerequisites: GitHub Actions Docker runner and image built by the workflow
 - Exact write set: `scripts/runtime-smoke.sh`, `.github/workflows/container.yml`, `Makefile`
 - Primary integration lock: ci-workflow
 - Outcome: Verify real service lifecycle with a bounded CI timeout.
 - Focused validation: Boot through /init, inspect health, execute MCP initialization/list-tools, stop within the configured grace period and collect failure logs; always clean only test-owned resources.
-- Handoff: `scripts/runtime-smoke.sh`, the Make target, and the Linux workflow step are added. The local ARM64 run fails only code-server health; PLT-05 tracks that architecture defect. Keep this phase until the Linux amd64 workflow passes startup and shutdown plus the remaining MCP initialization/list-tools check.
+- Handoff: `scripts/runtime-smoke.sh`, the Make target, and the Linux workflow step are added. A local CPU image build and content smoke pass; the ARM64 runtime smoke fails only code-server health, tracked by PLT-05. Keep this phase until the Linux amd64 workflow passes image build, startup, shutdown, and the remaining MCP initialization/list-tools check.
 
 ## TST-03 — Add an explicit model-serving acceptance job
 

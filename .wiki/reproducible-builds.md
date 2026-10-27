@@ -15,11 +15,11 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Rechecked 2026-10-27. `scripts/build_llama_cpp_from_source.sh` still clones llama.cpp default HEAD without checkout, and Homebrew installs current hf and llama-swap. The direct Notebook base is now pinned to the published 1.0.5 multi-platform index digest, and the ARM64 image built from it; other OCI bases remain mutable. CI pins checkout to a full commit and verifies shfmt v3.11.0 before installation, but the latest published Linux run failed shellcheck SC2310. A local fix passes `make check`; a new CI result is pending. `docs/dependency-updates.md` records the current pin and update process.
+Rechecked 2026-10-27. `scripts/build_llama_cpp_from_source.sh` still clones llama.cpp default HEAD without checkout, and Homebrew installs current hf and llama-swap. The direct Notebook base is pinned to the published 1.0.5 multi-platform index digest, and an ARM64 image built from it; other OCI bases remain mutable. The [latest published Linux run](https://github.com/jhwohlgemuth/INDIGO/actions/runs/40573556693) passed checkout, verified shfmt installation, shell checks and lint before losing the runner during the full image build. `docs/dependency-updates.md` records the inputs and update process. A local CPU validation image builds and passes content smoke; Linux CI validation is pending.
 
 ## Boundaries and decisions
 
-Start with the inference dependency: select a reviewed full upstream commit, pass it as a Docker build argument, check it out detached, and label the built image with the revision. Handle OCI base images, CI downloads, and Homebrew version guards in separate phases with a shared update record. Do not assert bit-for-bit reproducibility while apt, Homebrew and transitive package resolution remain unlocked. No image builder was available for verification.
+Start with the inference dependency: select a reviewed full upstream commit, pass it as a Docker build argument, check it out detached, and label the built image with the revision. Handle remaining OCI base images and Homebrew version guards in separate phases with a shared update record. Do not assert bit-for-bit reproducibility while apt, Homebrew and transitive package resolution remain unlocked. An ARM64 Docker builder is available; Linux CI has not built the image successfully.
 
 ## Dependencies
 
@@ -37,7 +37,7 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 ## REP-01 — Pin the inference source revision
 
-- Status: blocked
+- Status: ready
 - Budget: 5 active hours maximum
 - Prerequisites: provisioned image builder and access to the selected upstream llama.cpp revision
 - Exact write set: `scripts/build_llama_cpp_from_source.sh`, `Dockerfile`, `tests/build-inputs.sh`
@@ -56,17 +56,6 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 - Outcome: Replace mutable `FROM` references with reviewed tag-plus-digest references and document how to review updates and the remaining apt/pip/npm resolution risk.
 - Focused validation: Inspect resolved digests, build the image and run image smoke checks on a provisioned builder.
 - Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
-
-## REP-03 — Verify CI tool downloads
-
-- Status: in-progress
-- Budget: 5 active hours maximum
-- Prerequisites: none
-- Exact write set: `.github/workflows/container.yml`, `docs/dependency-updates.md`
-- Primary integration lock: ci-workflow
-- Outcome: Verify the downloaded shfmt artifact by SHA-256 before installation, pin checkout to a reviewed commit, and record the update procedure.
-- Focused validation: Confirm a changed shfmt byte fails verification; run the shell checks and review the workflow result on Linux CI.
-- Handoff: `.github/workflows/container.yml` and `docs/dependency-updates.md` changed. The official shfmt release asset matched the recorded SHA-256; a byte-changed fixture failed the same check; local `make check` and `make lint` passed. Review the Linux workflow result, repair any focused defect, then remove REP-03 and reconcile the wiki.
 
 ## REP-04 — Guard Homebrew tool versions
 

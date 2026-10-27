@@ -45,8 +45,15 @@ jobs:
         run: make check
       - name: Lint build and Compose configuration
         run: make lint
-      - name: Build image
-        run: make build
+      - name: Free space for the image build
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet \
+            /usr/local/share/powershell /usr/local/.ghcup /opt/hostedtoolcache
+          df -h /
+      - name: Build CPU validation image
+        timeout-minutes: 60
+        run: make build INDIGO_LLAMA_BACKEND=cpu
       - name: Smoke test image contents
         run: make image-smoke
       - name: Boot and stop disposable container

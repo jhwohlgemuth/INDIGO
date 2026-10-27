@@ -55,6 +55,7 @@ ARG CONTEXT_SIZE=0
 ARG PORT=10732
 ARG OPENVIKING_VERSION=0.4.17
 ARG INDIGO_LLAMA_BACKEND=cuda
+ARG INDIGO_LLAMA_BUILD_JOBS=2
 #
 # %environment
 #
@@ -128,7 +129,9 @@ RUN if [ "${INDIGO_LLAMA_BACKEND}" = cuda ]; then install_cuda_toolkit; \
     elif [ "${INDIGO_LLAMA_BACKEND}" != cpu ]; then echo "unsupported llama backend: ${INDIGO_LLAMA_BACKEND}" >&2; exit 1; fi \
     && install -d -m 0755 -o "${USER_NAME}" -g "${USER_NAME}" "${MODEL_DIRECTORY}" "${HOME}/.config/llama-swap"
 RUN sed -i 's/\r$//' /tmp/build_llama_cpp_from_source.sh \
-    && INDIGO_LLAMA_BACKEND="${INDIGO_LLAMA_BACKEND}" bash /tmp/build_llama_cpp_from_source.sh \
+    && INDIGO_LLAMA_BACKEND="${INDIGO_LLAMA_BACKEND}" \
+        INDIGO_LLAMA_BUILD_JOBS="${INDIGO_LLAMA_BUILD_JOBS}" \
+        bash /tmp/build_llama_cpp_from_source.sh \
     && rm -f /tmp/build_llama_cpp_from_source.sh
 RUN install -d -m 0755 -o "${USER_NAME}" -g "${USER_NAME}" "${HOME}/.openviking" "${HOME}/.pinokio" \
     "${CARGO_HOME}" \
