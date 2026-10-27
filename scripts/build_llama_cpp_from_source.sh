@@ -61,10 +61,12 @@ main() {
     local BUILD_DIRECTORY="${SRC_DIRECTORY}/build"
     local LIB_DIRECTORY=/usr/local/lib
     local -a BACKEND_ARGS=()
+    local -a BUILD_TARGET_ARGS=()
     if [[ "${backend}" == cuda ]]; then
         BACKEND_ARGS=(-DGGML_NATIVE=OFF -DGGML_CUDA=ON -DGGML_CPU_ALL_VARIANTS=ON -DCMAKE_CUDA_COMPILER="$(command -v nvcc)")
     else
-        BACKEND_ARGS=(-DGGML_NATIVE=ON -DGGML_CUDA=OFF -DGGML_CPU_ALL_VARIANTS=OFF)
+        BACKEND_ARGS=(-DGGML_NATIVE=ON -DGGML_CUDA=OFF -DGGML_CPU_ALL_VARIANTS=OFF -DLLAMA_USE_PREBUILT_UI=OFF)
+        BUILD_TARGET_ARGS=(--target llama-cli llama-server)
     fi
     if [[ -n "${CMAKE_ARGS:-}" ]]; then
         # Split optional CMAKE_ARGS into an array so arguments are passed safely.
@@ -76,12 +78,11 @@ main() {
         "${BACKEND_ARGS[@]}" \
         -DGGML_BACKEND_DL=ON \
         -DLLAMA_BUILD_TESTS=OFF \
-        -DLLAMA_USE_PREBUILT_UI=OFF \
         "${CMAKE_ARGS_ARRAY[@]}" \
         -DCMAKE_EXE_LINKER_FLAGS=-Wl,--allow-shlib-undefined \
         -DCMAKE_BUILD_TYPE=Release \
         .
-    cmake --build build --config Release --target llama-cli llama-server --parallel "${build_jobs}"
+    cmake --build build --config Release "${BUILD_TARGET_ARGS[@]}" --parallel "${build_jobs}"
     popd > /dev/null || exit
 
     install_shared_objects
