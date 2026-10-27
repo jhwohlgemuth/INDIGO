@@ -53,7 +53,17 @@ jobs:
           df -h /
       - name: Build CPU validation image
         timeout-minutes: 60
-        run: make build INDIGO_LLAMA_BACKEND=cpu
+        run: |
+          set +e
+          make build INDIGO_LLAMA_BACKEND=cpu 2>&1 | tee /tmp/indigo-build.log
+          build_status=${PIPESTATUS[0]}
+          set -e
+          if [ "${build_status}" -ne 0 ]; then
+            detail="$(tail -n 20 /tmp/indigo-build.log |
+              tr '\r\n' '  ' | cut -c1-3000)"
+            echo "::error title=CPU image build failed::${detail}"
+            exit "${build_status}"
+          fi
       - name: Smoke test image contents
         run: make image-smoke
       - name: Boot and stop disposable container
