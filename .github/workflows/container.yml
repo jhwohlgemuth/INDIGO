@@ -53,10 +53,19 @@ jobs:
           df -h /
       - name: Add swap for Docker layer export
         run: |
-          sudo fallocate -l 16G /swapfile
+          if ! detail="$(sudo fallocate -l 16G /swapfile 2>&1)"; then
+            echo "::error title=Swap allocation failed::${detail}"
+            exit 1
+          fi
           sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
+          if ! detail="$(sudo mkswap /swapfile 2>&1)"; then
+            echo "::error title=Swap formatting failed::${detail}"
+            exit 1
+          fi
+          if ! detail="$(sudo swapon /swapfile 2>&1)"; then
+            echo "::error title=Enable swap failed::${detail}"
+            exit 1
+          fi
           free -h
       - name: Build CPU validation image
         timeout-minutes: 60
