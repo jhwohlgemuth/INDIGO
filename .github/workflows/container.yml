@@ -51,6 +51,13 @@ jobs:
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet \
             /usr/local/share/powershell /usr/local/.ghcup /opt/hostedtoolcache
           df -h /
+      - name: Add swap for Docker layer export
+        run: |
+          sudo fallocate -l 16G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
       - name: Build CPU validation image
         timeout-minutes: 60
         run: |
@@ -59,9 +66,11 @@ jobs:
             while sleep 90; do
               disk="$(df -Pk / | awk 'NR==2 {print $4}')"
               memory="$(free -m | awk 'NR==2 {print $7}')"
+              swap="$(free -m | awk 'NR==3 {print $4}')"
               progress="$(tail -n 1 /tmp/indigo-build.log |
                 tr '\r\n' '  ' | cut -c1-200)"
               detail="disk_free_kb=${disk} memory_available_mb=${memory}"
+              detail+=" swap_free_mb=${swap}"
               echo "::notice title=CPU build heartbeat::${detail} ${progress}"
             done
           ) &
