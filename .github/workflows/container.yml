@@ -53,16 +53,16 @@ jobs:
           df -h /
       - name: Add swap for Docker layer export
         run: |
-          if ! detail="$(sudo fallocate -l 16G /swapfile 2>&1)"; then
+          if ! detail="$(sudo fallocate -l 16G /indigo.swap 2>&1)"; then
             echo "::error title=Swap allocation failed::${detail}"
             exit 1
           fi
-          sudo chmod 600 /swapfile
-          if ! detail="$(sudo mkswap /swapfile 2>&1)"; then
+          sudo chmod 600 /indigo.swap
+          if ! detail="$(sudo mkswap /indigo.swap 2>&1)"; then
             echo "::error title=Swap formatting failed::${detail}"
             exit 1
           fi
-          if ! detail="$(sudo swapon /swapfile 2>&1)"; then
+          if ! detail="$(sudo swapon /indigo.swap 2>&1)"; then
             echo "::error title=Enable swap failed::${detail}"
             exit 1
           fi
