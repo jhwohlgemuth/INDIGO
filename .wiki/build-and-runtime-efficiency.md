@@ -59,9 +59,9 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 ## EFF-03 — Cache and cancel redundant CI builds
 
-- Status: planned
+- Status: ready
 - Budget: 5 active hours maximum
-- Prerequisites: TST-02
+- Prerequisites: none
 - Exact write set: `.github/workflows/container.yml`
 - Primary integration lock: ci-workflow
 - Outcome: Add scoped cache reuse and concurrency cancellation.

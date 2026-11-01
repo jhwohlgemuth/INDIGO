@@ -17,8 +17,7 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 
 ## [Test service behavior before releasing images](runtime-ci.md)
 
-- TST-02: GitHub Actions Docker runner and image built by the workflow
-- TST-03: TST-02; approved small model fixture and available CPU validation host
+- TST-03: Approved small model fixture and available CPU validation host
 
 ## [Preserve router configuration and document recovery](persistent-state.md)
 
@@ -57,6 +56,6 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 
 - EFF-01: Accessible benchmark Docker host and fixed image input revisions
 - EFF-02: EFF-01; provisioned image builder
-- EFF-03: TST-02
+- EFF-03: No feature prerequisite
 - EFF-04: EFF-01, PRT-02; accessible benchmark Docker host
 

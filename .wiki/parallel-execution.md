@@ -4,12 +4,11 @@ This is a scheduling reference, not authorization to start agents or product cha
 
 ## High impact implementation queue
 
-Updated 2026-10-31. Docker Desktop and an Apple Silicon host are available. The pinned ARM64 INDIGO image builds, and the qualified Qwen3 MLX contract passes clean routed streaming plus a structured tool-result round trip. Full ARM64 health still fails on the inherited x86-64 code-server bundle. The latest published Linux CI run builds and boots the CPU image successfully; a new run must prove the added MCP initialization/list-tools assertions and pinned llama.cpp revision. Do not treat build or router liveness as model-serving acceptance.
+Updated 2026-10-31. Docker Desktop and an Apple Silicon host are available. The pinned ARM64 INDIGO image builds, and the qualified Qwen3 MLX contract passes clean routed streaming plus a structured tool-result round trip. Full ARM64 health still fails on the inherited x86-64 code-server bundle. The latest published Linux CI run builds the pinned CPU image and passes content, lifecycle, and both bundled MCP protocol checks. Do not treat build or router liveness as model-serving acceptance.
 
-1. Run the Linux CPU validation workflow with the new MCP initialization/list-tools assertions and pinned llama.cpp revision. Remove TST-02 only after that run passes.
-2. Coordinate the upstream architecture fix and release in PLT-05, then complete PLT-03 with the qualified Qwen3 contract, OpenCode selection and restart/preservation evidence. Only then start UZU-01; its later phases follow in order.
-3. Serialize the now-ready REP-02 and REP-04 image-build work; run DAT-01 and CFG-02 when their specific fixtures are available. NET-02 requires a private OpenViking 0.4.17 auth fixture with a tenant user key. Keep overlapping Dockerfile, CI and dependency-update documentation edits serial.
-4. Run TST-03 only after TST-02 and an approved small model fixture on a CPU host; its report must mark GPU inference unverified. DAT-02 follows DAT-01 and requires a separate disposable restore rehearsal. Recheck each phase's code baseline, exact write set, and five-hour budget before starting it.
+1. Coordinate the upstream architecture fix and release in PLT-05, then complete PLT-03 with the qualified Qwen3 contract, OpenCode selection and restart/preservation evidence. Only then start UZU-01; its later phases follow in order.
+2. Serialize the now-ready REP-02 and REP-04 image-build work; EFF-03 may use the released CI lock. Run DAT-01 and CFG-02 when their specific fixtures are available. NET-02 requires a private OpenViking 0.4.17 auth fixture with a tenant user key. Keep overlapping Dockerfile, CI and dependency-update documentation edits serial.
+3. Run TST-03 when an approved small model fixture and CPU host are available; its report must mark GPU inference unverified. DAT-02 follows DAT-01 and requires a separate disposable restore rehearsal. Recheck each phase's code baseline, exact write set, and five-hour budget before starting it.
 
 The next implementation handoff for each phase is its plan's `Outcome` and `Focused validation` pair. At completion, remove that phase, update the nearest index, network and this guide, and retain durable evidence in code, tests or user documentation.
 
@@ -19,8 +18,7 @@ The next implementation handoff for each phase is its plan's `Outcome` and `Focu
 | [CFG-02](safe-config-rendering.md) | mcp-launchers | Blocked: provisioned image or Docker host for live MCP validation |
 | [REP-02](reproducible-builds.md) | image-build | Ready: registries and provisioned builder are available |
 | [REP-04](reproducible-builds.md) | image-build | Ready after REP-02 releases the shared image-build lock |
-| [TST-02](runtime-ci.md) | ci-workflow | In progress; Linux CPU image and startup CI result pending |
-| [TST-03](runtime-ci.md) | inference-validation | Blocked: TST-02, approved small model fixture and CPU host |
+| [TST-03](runtime-ci.md) | inference-validation | Blocked: approved small model fixture and CPU host |
 | [DAT-01](persistent-state.md) | standalone-launch | Blocked: Docker host with disposable container and volume |
 | [DAT-02](persistent-state.md) | runtime-docs | Blocked: DAT-01 and Docker host with disposable restore volumes |
 | [PLT-02](platform-contract.md) | image-build | Blocked: approved CPU model fixture; builder is available |
@@ -38,8 +36,8 @@ The next implementation handoff for each phase is its plan's `Outcome` and `Focu
 | [PRT-02](port-and-agent-contracts.md) | config-seeding | Ready; local config seeding fixtures |
 | [EFF-01](build-and-runtime-efficiency.md) | performance-evidence | Accessible benchmark Docker host and fixed image input revisions |
 | [EFF-02](build-and-runtime-efficiency.md) | image-build | EFF-01; provisioned image builder |
-| [EFF-03](build-and-runtime-efficiency.md) | ci-workflow | TST-02 |
+| [EFF-03](build-and-runtime-efficiency.md) | ci-workflow | Ready: runtime CI baseline is green |
 | [EFF-04](build-and-runtime-efficiency.md) | runtime-docs | EFF-01, PRT-02; accessible benchmark Docker host |
 
-Medium-impact PRT-02, ENV-01 and DOC-01 remain eligible in the wider portfolio. PRT-01 and ENV-01 remain ordered; EFF-03 and TST phases serialize through the CI lock.
+Medium-impact PRT-02, ENV-01 and DOC-01 remain eligible in the wider portfolio. PRT-01 and ENV-01 remain ordered.
 

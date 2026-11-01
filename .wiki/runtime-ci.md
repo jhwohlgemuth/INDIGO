@@ -6,7 +6,7 @@ difficulty: medium
 impact: high
 package: [indigo]
 tags: [runtime-ci, project-review]
-status: in-progress
+status: planned
 execution: phased
 phase_budget_hours: 5
 ---
@@ -15,7 +15,7 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Rechecked 2026-10-31. The [published Linux CI run](https://github.com/jhwohlgemuth/INDIGO/actions/runs/40610089368) at `59b13c0` passed installation, `make check`, `make lint`, the CPU image build, content smoke, startup and shutdown; Windows configuration also passed. The runtime smoke now enables both bundled MCP services and performs bounded Streamable HTTP initialization and tools/list assertions. Isolated local probes pass for both services, but the full new script still needs Linux CI evidence because the available ARM64 base has the separate PLT-05 code-server defect. Router health is not model-serving proof.
+Rechecked 2026-10-31. The [published workflow](https://github.com/jhwohlgemuth/INDIGO/actions/runs/41264230496) at `75c4d64` passes Windows configuration and the complete Linux validation job: installation, `make check`, `make lint`, pinned CPU image build, content smoke, startup, bounded Streamable HTTP initialization and tools/list assertions for both bundled MCP services, and shutdown. The available ARM64 base retains the separate PLT-05 code-server defect. Router health is not model-serving proof, so the remaining phase is the explicit model-serving acceptance job.
 
 ## Boundaries and decisions
 
@@ -35,22 +35,11 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 # Execution phases
 
-## TST-02 — Boot and stop a disposable CPU container in CI
-
-- Status: in-progress
-- Budget: 5 active hours maximum
-- Prerequisites: GitHub Actions Docker runner and image built by the workflow
-- Exact write set: `scripts/runtime-smoke.sh`, `.github/workflows/container.yml`, `Makefile`
-- Primary integration lock: ci-workflow
-- Outcome: Verify real service lifecycle with a bounded CI timeout.
-- Focused validation: Boot through /init, inspect health, execute MCP initialization/list-tools, stop within the configured grace period and collect failure logs; always clean only test-owned resources.
-- Handoff: `scripts/runtime-smoke.sh`, the Make target, and the Linux workflow step are added. The previous Linux run passes image build, startup and shutdown; isolated local initialization/list-tools probes pass for both MCP services. Keep this phase until the Linux amd64 workflow passes the combined runtime smoke containing those assertions.
-
 ## TST-03 — Add an explicit model-serving acceptance job
 
 - Status: blocked
 - Budget: 5 active hours maximum
-- Prerequisites: TST-02; approved small model fixture and available CPU validation host
+- Prerequisites: approved small model fixture and available CPU validation host
 - Exact write set: `scripts/inference-smoke.sh`, `.github/workflows/inference.yml`, `docs/inference-validation.md`
 - Primary integration lock: inference-validation
 - Outcome: Add a manual CPU model-serving workflow and publish its model hash, backend, host and completion result without implying GPU coverage.

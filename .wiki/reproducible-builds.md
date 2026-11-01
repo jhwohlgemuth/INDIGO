@@ -15,7 +15,7 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Rechecked 2026-10-31. llama.cpp now defaults to the reviewed v0.8.0 commit `8642541b255bfb5dc39cd351a178be09013a55d6`, checks it out detached, rejects non-full or mismatched revisions, and records it in the image label `org.indigo.llama.cpp.revision`. `tests/build-inputs.sh` covers the contract. A real ARM64 CPU image build reports the expected label and `llama-server` commit. The direct Notebook base remains pinned to the published 1.0.5 multi-platform index digest; other OCI bases remain mutable, and Homebrew still installs current hf and llama-swap without version guards. The latest published Linux workflow at `59b13c0` built and booted the CPU image successfully; a run containing the pinned inference source is pending.
+Rechecked 2026-10-31. llama.cpp now defaults to the reviewed v0.8.0 commit `8642541b255bfb5dc39cd351a178be09013a55d6`, checks it out detached, rejects non-full or mismatched revisions, and records it in the image label `org.indigo.llama.cpp.revision`. `tests/build-inputs.sh` covers the contract. Real ARM64 and Linux CI CPU image builds report the expected revision and pass their focused checks. The direct Notebook base remains pinned to the published 1.0.5 multi-platform index digest; other OCI bases remain mutable, and Homebrew still installs current hf and llama-swap without version guards.
 
 ## Boundaries and decisions
 

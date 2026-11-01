@@ -15,7 +15,7 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Rechecked 2026-10-31. `make start GPU=0` and `make run GPU=0` omit `--gpus all`; `tests/run-platform.sh` checks both modes. `compose.cpu.yaml` only removes the GPU reservation. The default image still installs CUDA. On Apple Silicon, `mlx-lm==0.32.2` with the pinned Qwen3 4B checkpoint passed clean native and routed streaming, a structured tool call, and the tool-result continuation. [Platform evidence](../docs/platform-support.md) keeps the incompatible GPT-OSS result separate. Full container health still fails because the Notebook ARM64 image inherited an x86-64 code-server Node binary.
+Rechecked 2026-10-31. `make start GPU=0` and `make run GPU=0` omit `--gpus all`; `tests/run-platform.sh` checks both modes. `compose.cpu.yaml` only removes the GPU reservation. The default image still installs CUDA. On Apple Silicon, `mlx-lm==0.32.2` with the pinned Qwen3 4B checkpoint passed clean native and routed streaming, a structured tool call, and the tool-result continuation. [Platform evidence](../docs/platform-support.md) keeps the incompatible GPT-OSS result separate. Full container health still fails because the Notebook ARM64 image inherited an x86-64 code-server Node binary. Upstream tracing shows `jhwohlgemuth/gold` calls `install_code_server` from `jhwohlgemuth/my-shell-setup`, whose current helper hard-codes the `linux-amd64` release archive; no existing Gold issue covers the defect.
 
 ## Boundaries and decisions
 
