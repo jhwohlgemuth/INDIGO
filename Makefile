@@ -59,6 +59,8 @@ lint:
 	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.cpu.yaml config --quiet
 	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.isolated.yaml config --quiet
 	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.cpu.yaml -f ./compose.isolated.yaml config --quiet
+	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.minimal.yaml config --quiet
+	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.cpu.yaml -f ./compose.isolated.yaml -f ./compose.minimal.yaml config --quiet
 	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.mlx.yaml config --quiet
 
 compose-build:

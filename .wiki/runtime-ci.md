@@ -15,7 +15,7 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Rechecked 2026-10-31. The [published workflow](https://github.com/jhwohlgemuth/INDIGO/actions/runs/41264230496) at `75c4d64` passes Windows configuration and the complete Linux validation job: installation, `make check`, `make lint`, pinned CPU image build, content smoke, startup, bounded Streamable HTTP initialization and tools/list assertions for both bundled MCP services, and shutdown. The available ARM64 base retains the separate PLT-05 code-server defect. Router health is not model-serving proof, so the remaining phase is the explicit model-serving acceptance job.
+Rechecked 2026-11-01. The [published workflow](https://github.com/jhwohlgemuth/INDIGO/actions/runs/41264230496) at `75c4d64` passes Windows configuration and the complete Linux validation job: installation, `make check`, `make lint`, pinned CPU image build, content smoke, startup, bounded Streamable HTTP initialization and tools/list assertions for both bundled MCP services, and shutdown. The local pinned code-server overlay now also passes the complete runtime smoke on ARM64. Router health is not model-serving proof, so the remaining phase is the explicit model-serving acceptance job.
 
 ## Boundaries and decisions
 

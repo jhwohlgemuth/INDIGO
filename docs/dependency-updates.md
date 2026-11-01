@@ -32,6 +32,20 @@ together after inspecting the published manifest and testing the resulting
 INDIGO image on the intended architectures. Gold remains a separate image and
 Terminal is inherited through Notebook, so INDIGO does not pin them directly.
 
+The inherited Notebook code-server bundle is replaced during the INDIGO build
+with `ghcr.io/coder/code-server:4.143.1` at multi-platform index digest
+`sha256:377b66bec5645510ed52549bb00e648c273edc604d230a3f90fd2b2433afcb97`.
+The reviewed index resolves Linux amd64 to
+`sha256:bc1a44f83c207dd9607cad8f5a13843918131361e899b4ebae9b786f5adbb76f`
+and Linux arm64 to
+`sha256:01ea4293f12df785c7e6d760c82ed80a594f093ec01b38ec707e22e64b691b83`.
+The complete `/usr/lib/code-server` tree is copied so its bundled Node binary
+and native modules resolve for the target architecture together. When updating
+this input, inspect the index for both Linux amd64 and arm64 manifests, update
+`CODE_SERVER_VERSION` and `CODE_SERVER_DIGEST` together, run
+`tests/build-inputs.sh`, and verify `code-server --version`, ELF machine IDs,
+and `scripts/runtime-smoke.sh` on ARM64.
+
 The inference source, other OCI base images, and Homebrew versions have
 separate remaining phases in the planning portfolio. This record does not claim
 bit-for-bit reproducible images while those inputs and transitive packages can

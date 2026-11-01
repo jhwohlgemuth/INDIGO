@@ -79,12 +79,12 @@ main() {
         # Split optional CMAKE_ARGS into an array so arguments are passed safely.
         read -r -a CMAKE_ARGS_ARRAY <<< "${CMAKE_ARGS}"
     fi
-    git clone https://github.com/ggml-org/llama.cpp.git "${SRC_DIRECTORY}"
+    install -d -m 0755 "${SRC_DIRECTORY}"
+    git -C "${SRC_DIRECTORY}" init
+    git -C "${SRC_DIRECTORY}" remote add origin https://github.com/ggml-org/llama.cpp.git
+    git -C "${SRC_DIRECTORY}" fetch --depth 1 origin "${llama_cpp_commit}"
+    git -C "${SRC_DIRECTORY}" checkout --detach FETCH_HEAD
     pushd "${SRC_DIRECTORY}" > /dev/null || exit
-    if ! git checkout --detach "${llama_cpp_commit}"; then
-        echo "error: LLAMA_CPP_COMMIT does not resolve in the cloned llama.cpp repository: ${llama_cpp_commit}" >&2
-        exit 1
-    fi
     checked_out_commit="$(git rev-parse HEAD)"
     if [[ "${checked_out_commit}" != "${llama_cpp_commit}" ]]; then
         echo "error: checked out llama.cpp revision ${checked_out_commit}, expected ${llama_cpp_commit}" >&2

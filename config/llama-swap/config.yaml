@@ -4,20 +4,22 @@ logToStdout: "none"
 proxy:
   listen: "http://0.0.0.0:10732"
 macros:
+  "batch_size": "${env.LLAMA_ARG_BATCH}"
   "context_size": "${env.LLAMA_ARG_CTX_SIZE}"
   "parallel": "${env.LLAMA_ARG_N_PARALLEL}"
   "models_dir": "${env.MODEL_DIRECTORY}"
+  "ubatch_size": "${env.LLAMA_ARG_UBATCH}"
 models:
   "__INDIGO_DEFAULT_MODEL__":
     proxy: "http://127.0.0.1:${PORT}"
     cmd: |
       llama-server
       --offline
-      --batch-size 2048
+      --batch-size ${batch_size}
       --host 0.0.0.0
       --jinja
       --model __INDIGO_DEFAULT_MODEL_PATH__
       --port ${PORT}
       --sleep-idle-seconds 600
       --tools all
-      --ubatch-size 2048
+      --ubatch-size ${ubatch_size}

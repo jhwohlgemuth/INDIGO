@@ -1,5 +1,7 @@
 ARG NOTEBOOK_VERSION=1.0.5
 ARG NOTEBOOK_DIGEST=sha256:c3256bd1d46ffd71f6c7b95cc0da7cca1c2ddc417070f3a7622bd557838be7dd
+ARG CODE_SERVER_VERSION=4.143.1
+ARG CODE_SERVER_DIGEST=sha256:377b66bec5645510ed52549bb00e648c273edc604d230a3f90fd2b2433afcb97
 ARG PINOKIO_NODE_VERSION=20
 ARG PINOKIO_COMMIT=2c39f9fe9c40c985e03b13ab8a48ead908139b39
 ARG MCP_NODE_VERSION=24
@@ -23,6 +25,8 @@ COPY --from=pinokio-source /src/package.json /src/package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 FROM caddy:2.9.1 AS pinokio-caddy
+
+FROM ghcr.io/coder/code-server:${CODE_SERVER_VERSION}@${CODE_SERVER_DIGEST} AS code-server
 
 FROM node:${MCP_NODE_VERSION}-bookworm-slim AS mcp-node
 ARG SUPERGATEWAY_VERSION=3.4.3
@@ -98,11 +102,25 @@ ENV INDIGO_ENABLE_PINOKIO=0
 ENV CARGO_HOME="${HOME}/.cargo"
 ENV RUSTUP_HOME=/usr/local/rustup
 ENV PATH="/usr/local/cargo/bin:/opt/mcp/node/bin:/opt/openviking/bin:/opt/pinokio/bin:/opt/pinokio/node/bin:${PATH}"
+# Keep inference compilation ahead of service and configuration copies so a
+# routine service-only edit can reuse this expensive layer.
+COPY --chmod=0755 ./scripts/build_llama_cpp_from_source.sh /tmp/build_llama_cpp_from_source.sh
+#
+# Inference build
+#
+USER root
+RUN if [ "${INDIGO_LLAMA_BACKEND}" = cuda ]; then install_cuda_toolkit; \
+    elif [ "${INDIGO_LLAMA_BACKEND}" != cpu ]; then echo "unsupported llama backend: ${INDIGO_LLAMA_BACKEND}" >&2; exit 1; fi \
+    && install -d -m 0755 -o "${USER_NAME}" -g "${USER_NAME}" "${MODEL_DIRECTORY}" "${HOME}/.config/llama-swap"
+RUN sed -i 's/\r$//' /tmp/build_llama_cpp_from_source.sh \
+    && LLAMA_CPP_COMMIT="${LLAMA_CPP_COMMIT}" \
+        INDIGO_LLAMA_BACKEND="${INDIGO_LLAMA_BACKEND}" \
+        INDIGO_LLAMA_BUILD_JOBS="${INDIGO_LLAMA_BUILD_JOBS}" \
+        bash /tmp/build_llama_cpp_from_source.sh \
+    && rm -f /tmp/build_llama_cpp_from_source.sh
 #
 # %files
 #
-COPY --chmod=0755 --chown=${USER_NAME}:${USER_NAME} ./rootfs/etc/services.d/ /etc/services.d/
-COPY --chmod=0755 --chown=${USER_NAME}:${USER_NAME} ./rootfs/etc/cont-init.d/* /etc/cont-init.d/
 COPY --from=pinokio-source --chown=${USER_NAME}:${USER_NAME} /src /opt/pinokio/app
 COPY --from=pinokio-build --chown=${USER_NAME}:${USER_NAME} /app/node_modules /opt/pinokio/app/node_modules
 COPY --from=pinokio-build /usr/local /opt/pinokio/node
@@ -110,14 +128,6 @@ COPY --from=pinokio-caddy /usr/bin/caddy /usr/local/bin/caddy
 COPY --from=mcp-node /usr/local /opt/mcp/node
 COPY --from=rust-toolchain /usr/local/cargo /usr/local/cargo
 COPY --from=rust-toolchain /usr/local/rustup /usr/local/rustup
-COPY --chmod=0755 ./rootfs/opt/pinokio/bin/conda /opt/pinokio/bin/conda
-COPY --chmod=0644 ./config/llama-swap/config.yaml /etc/indigo/defaults/llama-swap.yaml
-COPY --chmod=0644 ./config/llama-swap/mlx.yaml /etc/indigo/defaults/llama-swap-mlx.yaml
-COPY --chmod=0644 ./config/agents/opencode.json /etc/indigo/defaults/opencode.json
-COPY --chmod=0644 ./config/agents/opencode.mlx.json /etc/indigo/defaults/opencode-mlx.json
-COPY --chmod=0644 ./config/agents/codex.toml /etc/indigo/defaults/codex.toml
-COPY --chmod=0755 ./scripts/healthcheck.sh /healthcheck
-COPY --chmod=0755 ./scripts/build_llama_cpp_from_source.sh /tmp/build_llama_cpp_from_source.sh
 #
 # Post
 #
@@ -128,15 +138,6 @@ RUN ln -s /usr/local/cargo/bin/cargo /usr/local/bin/cargo \
     && ln -s /usr/local/cargo/bin/rustc /usr/local/bin/rustc \
     && ln -s /usr/local/cargo/bin/rustfmt /usr/local/bin/rustfmt \
     && ln -s /usr/local/cargo/bin/rustup /usr/local/bin/rustup
-RUN if [ "${INDIGO_LLAMA_BACKEND}" = cuda ]; then install_cuda_toolkit; \
-    elif [ "${INDIGO_LLAMA_BACKEND}" != cpu ]; then echo "unsupported llama backend: ${INDIGO_LLAMA_BACKEND}" >&2; exit 1; fi \
-    && install -d -m 0755 -o "${USER_NAME}" -g "${USER_NAME}" "${MODEL_DIRECTORY}" "${HOME}/.config/llama-swap"
-RUN sed -i 's/\r$//' /tmp/build_llama_cpp_from_source.sh \
-    && LLAMA_CPP_COMMIT="${LLAMA_CPP_COMMIT}" \
-        INDIGO_LLAMA_BACKEND="${INDIGO_LLAMA_BACKEND}" \
-        INDIGO_LLAMA_BUILD_JOBS="${INDIGO_LLAMA_BUILD_JOBS}" \
-        bash /tmp/build_llama_cpp_from_source.sh \
-    && rm -f /tmp/build_llama_cpp_from_source.sh
 RUN install -d -m 0755 -o "${USER_NAME}" -g "${USER_NAME}" "${HOME}/.openviking" "${HOME}/.pinokio" \
     "${CARGO_HOME}" \
     && install -d -m 0755 /etc/indigo/defaults \
@@ -159,7 +160,28 @@ RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
     && brew tap mostlygeek/llama-swap \
     && brew trust mostlygeek/llama-swap \
     && brew install --force hf llama-swap
+# Runtime-only tuning defaults stay after dependency installation so changing
+# them cannot invalidate inference compilation or package layers.
+ENV LLAMA_ARG_BATCH=2048
+ENV LLAMA_ARG_UBATCH=2048
 USER root
+# Replace the inherited bundle as a unit: its Node executable and native
+# modules must all match the target architecture.
+COPY --from=code-server --chown=${USER_NAME}:${USER_NAME} /usr/lib/code-server /app/code-server
+# Seed Docker-managed volumes with writable ownership before they are mounted.
+RUN install -d -m 0755 -o "${USER_NAME}" -g "${USER_NAME}" \
+    "${HOME}/.codex" "${HOME}/.config/opencode" "${HOME}/.local/share/opencode"
+# Frequently edited runtime files stay after dependency installation so their
+# changes invalidate only the final normalization and cleanup layers.
+COPY --chmod=0755 --chown=${USER_NAME}:${USER_NAME} ./rootfs/etc/services.d/ /etc/services.d/
+COPY --chmod=0755 --chown=${USER_NAME}:${USER_NAME} ./rootfs/etc/cont-init.d/* /etc/cont-init.d/
+COPY --chmod=0755 ./rootfs/opt/pinokio/bin/conda /opt/pinokio/bin/conda
+COPY --chmod=0644 ./config/llama-swap/config.yaml /etc/indigo/defaults/llama-swap.yaml
+COPY --chmod=0644 ./config/llama-swap/mlx.yaml /etc/indigo/defaults/llama-swap-mlx.yaml
+COPY --chmod=0644 ./config/agents/opencode.json /etc/indigo/defaults/opencode.json
+COPY --chmod=0644 ./config/agents/opencode.mlx.json /etc/indigo/defaults/opencode-mlx.json
+COPY --chmod=0644 ./config/agents/codex.toml /etc/indigo/defaults/codex.toml
+COPY --chmod=0755 ./scripts/healthcheck.sh /healthcheck
 RUN find /etc/services.d /etc/cont-init.d -type f -exec sed -i 's/\r$//' {} + \
     && sed -i 's/\r$//' /healthcheck /opt/pinokio/bin/conda
 RUN cleanup \

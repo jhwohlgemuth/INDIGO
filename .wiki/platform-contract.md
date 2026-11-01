@@ -15,7 +15,7 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Rechecked 2026-10-31. `make start GPU=0` and `make run GPU=0` omit `--gpus all`; `tests/run-platform.sh` checks both modes. `compose.cpu.yaml` only removes the GPU reservation. The default image still installs CUDA. On Apple Silicon, `mlx-lm==0.32.2` with the pinned Qwen3 4B checkpoint passed clean native and routed streaming, a structured tool call, and the tool-result continuation. [Platform evidence](../docs/platform-support.md) keeps the incompatible GPT-OSS result separate. Full container health still fails because the Notebook ARM64 image inherited an x86-64 code-server Node binary. Upstream tracing shows `jhwohlgemuth/gold` calls `install_code_server` from `jhwohlgemuth/my-shell-setup`, whose current helper hard-codes the `linux-amd64` release archive; no existing Gold issue covers the defect.
+Rechecked 2026-11-01. `make start GPU=0` and `make run GPU=0` omit `--gpus all`; `tests/run-platform.sh` checks both modes. `compose.cpu.yaml` only removes the GPU reservation. The default image still installs CUDA. On Apple Silicon, `mlx-lm==0.32.2` with the pinned Qwen3 4B checkpoint passed clean native and routed streaming, a structured tool call, and the tool-result continuation. [Platform evidence](../docs/platform-support.md) keeps the incompatible GPT-OSS result separate. INDIGO now overlays the inherited x86-64 code-server tree with the same 4.143.1 release from its pinned official multi-platform image. The rebuilt ARM64 image reports AArch64 for Node and runtime-selected native modules, and the complete container/MCP runtime smoke passes. PLT-03 now remains for OpenCode selection and restart/preservation acceptance.
 
 ## Boundaries and decisions
 
@@ -48,23 +48,12 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 ## PLT-03 — Verify the native Apple Silicon MLX route
 
-- Status: blocked
+- Status: ready
 - Budget: 5 active hours maximum
-- Prerequisites: PLT-05; Apple Silicon Mac with a working Docker daemon and the qualified Qwen3 MLX checkpoint
+- Prerequisites: Apple Silicon Mac with a working Docker daemon and the qualified Qwen3 MLX checkpoint
 - Exact write set: `scripts/mlx-acceptance.py`, `docs/platform-support.md`
 - Primary integration lock: mac-inference-validation
 - Outcome: Add a repeatable host acceptance command and record a successful native MLX to container router to client path, or retain this phase with the precise failure. This recorded success is the required gate for UZU-01.
 - Focused validation: Build and start `make up-mlx`; verify native `/health`, routed `/v1/models`, a streamed `/v1/chat/completions` reply, and a complete tool-call plus tool-result round trip through port 10732. Check stop and restart without replacing existing router/client config. Record macOS/SoC/RAM, image digest, `mlx-lm` version, model ID/hash, commands and results in `docs/platform-support.md`; use only test-owned state.
-- Handoff: Keep the MLX result in durable platform documentation, remove PLT-03 only after every acceptance check passes, and replace UZU-01's phase-ID prerequisite with the recorded evidence when updating the network and parallel guide. The qualified Qwen3 protocol checks pass; PLT-05 and the remaining client/restart checks are outstanding.
-
-## PLT-05 — Correct the inherited ARM64 code-server bundle
-
-- Status: blocked
-- Budget: 5 active hours maximum
-- Prerequisites: write/release access to `jhwohlgemuth/my-shell-setup` and `jhwohlgemuth/gold`, plus an ARM64 Docker validation host
-- Exact write set: `jhwohlgemuth/my-shell-setup` code-server installer, `jhwohlgemuth/gold` Notebook image build and release, plus INDIGO `.env`, `Dockerfile`, `docs/dependency-updates.md`, `docs/platform-support.md`
-- Primary integration lock: image-build
-- Outcome: Replace the upstream installer's hard-coded `linux-amd64` archive with a validated architecture mapping, publish a Notebook ARM64 base whose code-server Node executable is ARM64, then update INDIGO's reviewed tag and digest pair.
-- Focused validation: Inspect the executable's ELF machine ID in the new base, rebuild the INDIGO ARM64 image, and run `make runtime-smoke IMAGE_REF=ghcr.io/jhwohlgemuth/indigo:0.1.4-mlx-arm64` to verify code-server and all default services reach health.
-- Handoff: Record the new base and image digests plus the passing startup result. Remove this phase only after the ARM64 runtime passes, then unblock PLT-03.
+- Handoff: Keep the MLX result in durable platform documentation, remove PLT-03 only after every acceptance check passes, and replace UZU-01's phase-ID prerequisite with the recorded evidence when updating the network and parallel guide. The qualified Qwen3 protocol and full ARM64 runtime checks pass; OpenCode selection and restart/preservation checks remain.
 

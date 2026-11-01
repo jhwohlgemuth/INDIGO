@@ -1,5 +1,9 @@
 .git
 .github
+.wiki
+.env
+.env.*
+!.env.example
 .env.secret
 .indigo
 README.md

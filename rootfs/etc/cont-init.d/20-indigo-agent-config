@@ -7,6 +7,18 @@ model_path="${INDIGO_DEFAULT_MODEL_PATH:-${MODEL_DIRECTORY:-${HOME}/.models}/${m
 defaults_dir="${INDIGO_DEFAULTS_DIR:-/etc/indigo/defaults}"
 router_mode="${INDIGO_ROUTER_MODE:-llama}"
 
+json_boolean() {
+	if [[ "${1:-}" =~ ^(1|true|yes|on)$ ]]; then
+		printf 'true'
+	else
+		printf 'false'
+	fi
+}
+
+filesystem_enabled="$(json_boolean "${INDIGO_ENABLE_FILESYSTEM:-0}")"
+rust_analyzer_enabled="$(json_boolean "${INDIGO_ENABLE_RUST_ANALYZER:-0}")"
+openviking_enabled="$(json_boolean "${INDIGO_ENABLE_OPENVIKING:-0}")"
+
 if [[ "${router_mode}" == llama ]]; then
 	if [[ ! "${model}" =~ ^[A-Za-z0-9._-]+$ ]]; then
 		echo "INDIGO_DEFAULT_MODEL must contain only letters, numbers, dots, underscores, or hyphens" >&2
@@ -49,6 +61,9 @@ render_default() {
 	if ! sed \
 		-e "s|__INDIGO_DEFAULT_MODEL__|${model}|g" \
 		-e "s|__INDIGO_DEFAULT_MODEL_PATH__|${model_path}|g" \
+		-e "s|__INDIGO_ENABLE_FILESYSTEM__|${filesystem_enabled}|g" \
+		-e "s|__INDIGO_ENABLE_RUST_ANALYZER__|${rust_analyzer_enabled}|g" \
+		-e "s|__INDIGO_ENABLE_OPENVIKING__|${openviking_enabled}|g" \
 		"${source}" >"${temporary}"; then
 		rm -f -- "${temporary}"
 		return 1
@@ -90,10 +105,6 @@ else
 fi
 
 if [[ "${INDIGO_SEED_AGENT_CONFIG:-true}" == "true" ]]; then
-	if [[ "${router_mode}" == mlx ]]; then
-		install_default "${opencode_source}" "${HOME}/.config/opencode/opencode.json" 0644
-	else
-		render_default "${opencode_source}" "${HOME}/.config/opencode/opencode.json" 0644
-	fi
+	render_default "${opencode_source}" "${HOME}/.config/opencode/opencode.json" 0644
 	install_default "${defaults_dir}/codex.toml" "${HOME}/.codex/config.toml" 0600
 fi

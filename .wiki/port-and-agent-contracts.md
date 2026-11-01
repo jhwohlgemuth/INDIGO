@@ -15,11 +15,11 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Reviewed 2026-10-22 against commit ea5c9f7cb7734f1bee302e22bfd8035a8e851fc4 with local changes. Compose allows LLAMA_ARG_PORT to vary, but its published target stays 10732 and bundled OpenCode baseURL stays 10732. Router YAML also contains 10732. Direct-image optional services default off while OpenCode MCP entries default enabled. Make run hard-codes service enablement and duplicates Compose's configuration surface. First-run config seeding now preserves existing files and symlinks.
+Reviewed 2026-11-01 against commit c70dba762ef17a93c9da080a4341a6e29a864916 with local changes. Compose allows LLAMA_ARG_PORT to vary, but its published target stays 10732 and bundled OpenCode baseURL stays 10732. Router YAML also contains 10732. First-run OpenCode configuration now derives MCP enablement from the optional-service flags, preserves existing files and symlinks, and seeds correctly into fresh Docker-managed volumes. Make run still hard-codes service enablement and duplicates Compose's configuration surface.
 
 ## Boundaries and decisions
 
-Standardize internal inference on 10732 for the supported deployment and expose host-port customization separately; reject unsupported internal overrides in supported wrappers. Generate first-run MCP enablement from actual service flags while preserving user-managed files. This is remaining work, not an implementation claim. Docker runtime behavior and performance were not verified during this review because daemon access was denied.
+Standardize internal inference on 10732 for the supported deployment and expose host-port customization separately; reject unsupported internal overrides in supported wrappers. First-run MCP enablement is now generated from actual service flags while preserving user-managed files. The remaining work is the port contract.
 
 ## Dependencies
 
@@ -44,16 +44,5 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 - Primary integration lock: environment-contract
 - Outcome: Keep a single supported internal port while preserving configurable host publishing.
 - Focused validation: Render alternate host ports and verify container targets and client URLs remain aligned; reject conflicting internal-port overrides.
-- Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
-
-## PRT-02 — Seed agent defaults from service enablement
-
-- Status: ready
-- Budget: 5 active hours maximum
-- Prerequisites: none
-- Exact write set: `rootfs/etc/cont-init.d/20-indigo-agent-config`, `config/agents/opencode.json`, `tests/agent-defaults.sh`
-- Primary integration lock: config-seeding
-- Outcome: Enable only configured optional MCP connections on first boot.
-- Focused validation: Test direct-image and full-stack flag combinations; parse generated JSON; verify existing user configuration is never overwritten.
 - Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
 

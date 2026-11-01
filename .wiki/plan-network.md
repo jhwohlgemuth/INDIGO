@@ -27,8 +27,7 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 ## [Verify platform support, CPU inference, and Apple Silicon MLX](platform-contract.md)
 
 - PLT-02: Provisioned builder and approved CPU model fixture
-- PLT-03: PLT-05; Apple Silicon Mac, working Docker daemon and qualified Qwen3 MLX checkpoint
-- PLT-05: Write/release access to `jhwohlgemuth/my-shell-setup` and `jhwohlgemuth/gold`, plus an ARM64 Docker validation host
+- PLT-03: Apple Silicon Mac, working Docker daemon and qualified Qwen3 MLX checkpoint
 
 ## [Add optional Apple Silicon Uzu inference support](uzu-support.md)
 
@@ -50,12 +49,8 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 ## [Unify internal ports and generated client defaults](port-and-agent-contracts.md)
 
 - PRT-01: ENV-01
-- PRT-02: No feature prerequisite
 
 ## [Reduce measured build and idle resource costs](build-and-runtime-efficiency.md)
 
-- EFF-01: Accessible benchmark Docker host and fixed image input revisions
-- EFF-02: EFF-01; provisioned image builder
-- EFF-03: No feature prerequisite
-- EFF-04: EFF-01, PRT-02; accessible benchmark Docker host
+- EFF-03: Published branch containing the workflow change and permission to create or update a test PR
 

@@ -12,11 +12,33 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: container-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   validate:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Load image configuration
+        run: |
+          while IFS='=' read -r name value; do
+            case "${name}" in
+              REGISTRY|REGISTRY_PROJECT|IMAGE|VERSION|NOTEBOOK_VERSION|NOTEBOOK_DIGEST)
+                printf '%s=%s\n' "${name}" "${value}" >> "${GITHUB_ENV}"
+                ;;
+            esac
+          done < .env
+          image_ref="$(awk -F= '
+            $1 == "REGISTRY" { registry = $2 }
+            $1 == "REGISTRY_PROJECT" { project = $2 }
+            $1 == "IMAGE" { image = $2 }
+            $1 == "VERSION" { version = $2 }
+            END { print registry "/" project "/" image ":" version }
+          ' .env)"
+          printf 'INDIGO_IMAGE_REF=%s\n' "${image_ref}" >> "${GITHUB_ENV}"
+          printf 'INDIGO_IMAGE_LATEST=%s\n' "${image_ref%:*}:latest" >> "${GITHUB_ENV}"
       - name: Install shell validation tools
         run: |
           sudo apt-get update
@@ -67,35 +89,24 @@ jobs:
             exit 1
           fi
           free -h
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
       - name: Build CPU validation image
         timeout-minutes: 60
-        run: |
-          touch /tmp/indigo-build.log
-          (
-            while sleep 90; do
-              disk="$(df -Pk / | awk 'NR==2 {print $4}')"
-              memory="$(free -m | awk 'NR==2 {print $7}')"
-              swap="$(free -m | awk 'NR==3 {print $4}')"
-              progress="$(tail -n 1 /tmp/indigo-build.log |
-                tr '\r\n' '  ' | cut -c1-200)"
-              detail="disk_free_kb=${disk} memory_available_mb=${memory}"
-              detail+=" swap_free_mb=${swap}"
-              echo "::notice title=CPU build heartbeat::${detail} ${progress}"
-            done
-          ) &
-          heartbeat_pid=$!
-          trap 'kill "${heartbeat_pid}" 2>/dev/null || true' EXIT
-          set +e
-          BUILDKIT_PROGRESS=plain make build INDIGO_LLAMA_BACKEND=cpu \
-            INDIGO_LLAMA_BUILD_JOBS=1 2>&1 | tee /tmp/indigo-build.log
-          build_status=${PIPESTATUS[0]}
-          set -e
-          if [ "${build_status}" -ne 0 ]; then
-            detail="$(tail -n 20 /tmp/indigo-build.log |
-              tr '\r\n' '  ' | cut -c1-3000)"
-            echo "::error title=CPU image build failed::${detail}"
-            exit "${build_status}"
-          fi
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          load: true
+          tags: |
+            ${{ env.INDIGO_IMAGE_REF }}
+            ${{ env.INDIGO_IMAGE_LATEST }}
+          build-args: |
+            NOTEBOOK_VERSION=${{ env.NOTEBOOK_VERSION }}
+            NOTEBOOK_DIGEST=${{ env.NOTEBOOK_DIGEST }}
+            INDIGO_LLAMA_BACKEND=cpu
+            INDIGO_LLAMA_BUILD_JOBS=1
+          cache-from: type=gha,scope=container-cpu
+          cache-to: type=gha,mode=max,scope=container-cpu,ignore-error=true
       - name: Smoke test image contents
         run: make image-smoke
       - name: Boot and stop disposable container
@@ -113,6 +124,9 @@ jobs:
           docker compose -f compose.yaml -f compose.isolated.yaml config --quiet
           docker compose -f compose.yaml -f compose.cpu.yaml `
             -f compose.isolated.yaml config --quiet
+          docker compose -f compose.yaml -f compose.minimal.yaml config --quiet
+          docker compose -f compose.yaml -f compose.cpu.yaml `
+            -f compose.isolated.yaml -f compose.minimal.yaml config --quiet
           $cpu = docker compose -f compose.yaml -f compose.cpu.yaml config
           if ($cpu -match '(?m)^    gpus:') {
             throw 'CPU mode still contains a GPU reservation'

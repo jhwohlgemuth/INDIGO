@@ -35,6 +35,27 @@ docker run -dit --name indigo --hostname indigo --gpus all --restart unless-stop
 That exposes the OpenAI-compatible inference endpoint at `http://127.0.0.1:10732/v1` and code-server at `https://127.0.0.1:1337`.
 Pinokio, OpenViking, and the MCP servers stay off unless you set `INDIGO_ENABLE_PINOKIO`, `INDIGO_ENABLE_OPENVIKING`, `INDIGO_ENABLE_FILESYSTEM`, and `INDIGO_ENABLE_RUST_ANALYZER`.
 
+### Minimal Compose preset
+
+The opt-in minimal preset keeps inference and the Notebook base services, but disables Pinokio, OpenViking, Filesystem MCP, and Rust Analyzer MCP.
+It also starts with one inference slot, an 8,192-token context, a 512-token logical batch, and a 256-token physical batch:
+
+```shell
+docker compose -f compose.yaml -f compose.minimal.yaml up -d
+```
+
+On a CPU-only host, use:
+
+```shell
+docker compose -f compose.yaml -f compose.cpu.yaml -f compose.minimal.yaml up -d
+```
+
+Override `LLAMA_ARG_CTX_SIZE`, `LLAMA_ARG_BATCH`, `LLAMA_ARG_UBATCH`, or `LLAMA_ARG_N_PARALLEL` in the shell when a model or workload needs different limits.
+Larger values improve capacity or throughput but consume more memory; increase them one at a time and measure with the intended model.
+
+OpenCode's first-run configuration follows these service flags, so its optional MCP entries are disabled in minimal mode.
+Existing OpenCode configuration is user-owned and is never replaced; update it manually when changing presets.
+
 > [!CAUTION]
 The workspace, OpenViking state, Pinokio installations, Codex, and cargo cache are not mounted, so they do not survive `docker rm`.
 

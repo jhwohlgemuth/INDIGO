@@ -19,17 +19,17 @@
     "filesystem": {
       "type": "remote",
       "url": "http://127.0.0.1:11002/mcp",
-      "enabled": true
+      "enabled": __INDIGO_ENABLE_FILESYSTEM__
     },
     "rust-analyzer": {
       "type": "remote",
       "url": "http://127.0.0.1:11003/mcp",
-      "enabled": true
+      "enabled": __INDIGO_ENABLE_RUST_ANALYZER__
     },
     "openviking": {
       "type": "remote",
       "url": "http://127.0.0.1:1933/mcp",
-      "enabled": true
+      "enabled": __INDIGO_ENABLE_OPENVIKING__
     }
   }
 }

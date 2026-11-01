@@ -1,12 +1,12 @@
 ---
 type: Plan
 title: Reduce measured build and idle resource costs
-description: Repeatable baseline and after measurements show build/cache benefits; a service-only edit avoids recompiling inference; an opt-in minimal Compose preset reduces observed idle work without breaking documented clients.
+description: Repeatable measurements show build/cache and idle-resource benefits; the remaining evidence is GitHub-hosted cache reuse and PR cancellation behavior.
 difficulty: high
 impact: medium
 package: [indigo]
 tags: [build-and-runtime-efficiency, project-review]
-status: planned
+status: waiting-on-validation
 execution: phased
 phase_budget_hours: 5
 ---
@@ -15,67 +15,33 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Reviewed 2026-10-22 against commit ea5c9f7cb7734f1bee302e22bfd8035a8e851fc4. Dockerfile copies frequently changed service/config files before expensive inference compilation. llama.cpp uses an unbounded nproc parallel build and full git clone. CI has no explicit persistent build cache or cancellation policy. Full Compose enables every optional service. The router already uses a 600-second idle-sleep option, so idle behavior must be measured rather than assumed absent.
+Reviewed 2026-11-01 against commit c70dba762ef17a93c9da080a4341a6e29a864916 and the active worktree. Durable methodology and results are in `docs/performance.md`. On the controlled Dante ARM64 host, the optimized CPU build measured 328 seconds cold and 7 seconds warm versus 519 and 5 seconds at baseline; a service-only edit rebuilt in 6 seconds with inference and dependency layers cached. The final image content and CPU backend load checks pass. The opt-in minimal preset renders and starts, serves `/v1/models`, seeds disabled optional MCP entries into a fresh OpenCode volume, and averaged 4.49% Docker CPU / 354.4 MiB RAM without a loaded model versus 5.32% / 893.4 MiB for the full optional service set. Host power was unavailable, so no energy claim is made. CI now uses immutable Docker Buildx actions, a scoped GitHub Actions cache, and PR-only supersession cancellation. GitHub-hosted cache reuse across two runs and observed PR cancellation remain unverified because the workflow has not been published.
 
 ## Boundaries and decisions
 
-Optimize measured cold/warm build time, image bytes and idle resources without removing required developer tooling. Do not claim energy savings from wall time alone. This is remaining work, not an implementation claim. Docker runtime behavior and performance were not verified during this review because daemon access was denied.
+Optimize measured cold/warm build time, image bytes and idle resources without removing required developer tooling. Do not claim energy savings from wall time alone. Keep the default full stack and offer the lower-resource service set as an opt-in preset.
 
 ## Dependencies
 
-Phase prerequisites below are the authoritative blockers. Shared integration locks serialize edits but do not create feature dependencies. Every implementation phase also requires its listed validation tools and disposable fixtures to be available before starting; download and queue time are external waiting.
+Phase prerequisites below are the authoritative blockers. Shared integration locks serialize edits but do not create feature dependencies. External validation starts only after the workflow is published to a branch.
 
 ## Acceptance criteria
 
-Repeatable baseline and after measurements show build/cache benefits; a service-only edit avoids recompiling inference; an opt-in minimal Compose preset reduces observed idle work without breaking documented clients.
+Repeatable baseline and after measurements show build/cache benefits; a service-only edit avoids recompiling inference; an opt-in minimal Compose preset reduces observed idle work without breaking documented clients; hosted CI reuses the scoped cache and cancels only superseded PR work.
 
 ## Validation
 
-Use the focused checks in each phase. Keep fixtures disposable, preserve user state, and record hardware/model/image identity for runtime evidence. If a result cannot be verified, retain the phase and name the missing evidence. No phase may grow beyond five active hours.
+Use the focused check below. If the hosted result cannot be verified, retain the phase and name the missing evidence. No phase may grow beyond five active hours.
 
 # Execution phases
 
-## EFF-01 — Capture reproducible resource baselines
-
-- Status: planned
-- Budget: 5 active hours maximum
-- Prerequisites: Accessible benchmark Docker host and fixed image input revisions
-- Exact write set: `scripts/benchmark.sh`, `docs/performance.md`
-- Primary integration lock: performance-evidence
-- Outcome: Provide a repeatable benchmark and distinguish measurements from estimates.
-- Focused validation: Record image digest, hardware, cold/warm build time, image size, idle CPU/RAM and available power measurements; avoid downloading models unless explicitly configured.
-- Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
-
-## EFF-02 — Isolate expensive compilation from service edits
-
-- Status: planned
-- Budget: 5 active hours maximum
-- Prerequisites: EFF-01; provisioned image builder
-- Exact write set: `Dockerfile`, `scripts/build_llama_cpp_from_source.sh`, `.dockerignore`
-- Primary integration lock: image-build
-- Outcome: Reorder or stage build artifacts, use shallow pinned source retrieval, and exclude .wiki and instance env files from context.
-- Focused validation: Compare cold/warm builds using the baseline; change only a service script and inspect cache reuse; verify binary and backend loading; bound build concurrency.
-- Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
-
 ## EFF-03 — Cache and cancel redundant CI builds
 
-- Status: ready
+- Status: blocked
 - Budget: 5 active hours maximum
-- Prerequisites: none
+- Prerequisites: Published branch containing the workflow change and permission to create or update a test PR
 - Exact write set: `.github/workflows/container.yml`
 - Primary integration lock: ci-workflow
 - Outcome: Add scoped cache reuse and concurrency cancellation.
-- Focused validation: Inspect BuildKit cache hits across two test builds and confirm superseded PR runs cancel without canceling protected release work.
-- Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
-
-## EFF-04 — Offer an explicit minimal service preset
-
-- Status: planned
-- Budget: 5 active hours maximum
-- Prerequisites: EFF-01, PRT-02; accessible benchmark Docker host
-- Exact write set: `compose.minimal.yaml`, `docs/performance.md`, `README.md`
-- Primary integration lock: runtime-docs
-- Outcome: Provide an opt-in lower-resource preset and tuning guidance for context size, batch size and parallelism.
-- Focused validation: Render the preset, measure idle resources and verify inference plus seeded client behavior with optional services disabled.
-- Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
-
+- Focused validation: Inspect BuildKit cache hits across two GitHub-hosted test builds; update the same test PR while a run is active and confirm the superseded PR run cancels without canceling push or manual-dispatch work.
+- Handoff: Record the hosted run links in durable release/CI evidence, remove this phase and plan when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record the exact run and next action.

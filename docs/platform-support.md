@@ -3,7 +3,9 @@
 Indigo currently publishes one Linux image that installs a CUDA toolkit and builds a CUDA-capable `llama-server`.
 Disabling a runtime GPU reservation does not remove those image dependencies.
 The CI workflow builds a CPU validation image on an Ubuntu runner, checks Compose rendering on Windows, and includes a disposable startup smoke check. This checks startup without requiring a CUDA toolkit or GPU on the hosted runner; it does not validate the default CUDA image or serve a model.
-The Apple Silicon run below reached native MLX and the container router but failed model-serving acceptance.
+The Apple Silicon run below reached native MLX and the container router. A
+later image repair also restored full ARM64 container health; the remaining MLX
+acceptance work is client selection and restart/preservation evidence.
 
 ## Evidence matrix
 
@@ -16,7 +18,7 @@ The table below separates the launch path each platform is *configured* to use f
 | Windows x86_64 with WSL2 and NVIDIA | Compose or standalone GPU launch | Compose rendering checked in CI; no recorded runtime result |
 | Windows x86_64 with WSL2, CPU only | `compose.cpu.yaml` or `make run GPU=0` | Compose rendering checked in CI; no recorded runtime result |
 | macOS Intel, Docker Linux VM | CPU launch without `--gpus all` | No recorded runtime result |
-| macOS Apple Silicon, Docker Linux VM | `make up-mlx MLX_MODEL=...`, ARM64 CPU INDIGO image and native host MLX | Pinned ARM64 image built; clean routed streaming and a structured tool-result round trip passed with the qualified Qwen3 checkpoint on 2026-10-31; full container health still fails on the inherited code-server bundle |
+| macOS Apple Silicon, Docker Linux VM | `make up-mlx MLX_MODEL=...`, ARM64 CPU INDIGO image and native host MLX | Clean routed streaming and a structured tool-result round trip passed with the qualified Qwen3 checkpoint; the pinned code-server overlay and full container runtime smoke passed on ARM64 on 2026-11-01 |
 | Linux with AMD GPU | CPU launch only | No accelerated backend packaged |
 
 ## CPU-only launch
@@ -39,7 +41,7 @@ Router liveness does not prove model serving: the Mac acceptance run must includ
 - Native server: `mlx-lm==0.32.2`; checkpoint `mlx-community/gpt-oss-20b-MXFP4-Q8`, converted by its publisher with mlx-lm 0.27.0. SHA-256 of weight shards `model-00001`/`00002`/`00003`: `57f4846924652b1b23537c6c6d6b65f64fde811e47369d4e23c5c45b4d7584a7`, `4a862a873080e489db16125877e19553b958562ff4dd0246135bc061c3293652`, `16c32bb8dbd1fa8d556815706589d6d6480d29946196cd2fe2b721d4daf84132`.
 - `make mlx-model-check`, `docker compose -f compose.yaml -f compose.mlx.yaml config --quiet`, and `make image-smoke VERSION=0.1.4-mlx-arm64` passed. `make up-mlx` started native MLX and the container router. After rebuilding against the pinned base and recreating the container, `python3 scripts/mlx-acceptance.py` passed native `/health`, native `/v1/models`, and routed `/v1/models` (`mlx/default_model`).
 - The routed streamed completion included raw `<|channel|>analysis` and `<|message|>` control tokens. A request for `get_temperature` produced a textual `to=functions.get_temperature` sequence in `message.content`, with no structured `tool_calls`. The tool-result round trip and OpenCode client selection therefore remain unverified. The local `mlx-lm` tokenizer parser inference has no parser match for this checkpoint's template; whether a different supported checkpoint or host-server fix resolves both output defects requires a new acceptance run.
-- `make runtime-smoke IMAGE_REF=ghcr.io/jhwohlgemuth/indigo:0.1.4-mlx-arm64` timed out: Verdaccio, Jupyter, Marimo, and the inference router passed, but code-server was unreachable. The inherited `/app/code-server/lib/node` in the pinned ARM64 image has ELF machine ID 62 (x86-64); its service log repeats `rosetta error: failed to open elf at /lib64/ld-linux-x86-64.so.2`. The image needs an ARM64 code-server bundle before full health can pass.
+- `make runtime-smoke IMAGE_REF=ghcr.io/jhwohlgemuth/indigo:0.1.4-mlx-arm64` timed out: Verdaccio, Jupyter, Marimo, and the inference router passed, but code-server was unreachable. The inherited `/app/code-server/lib/node` in the pinned ARM64 image has ELF machine ID 62 (x86-64); its service log repeats `rosetta error: failed to open elf at /lib64/ld-linux-x86-64.so.2`. This is the failure repaired by the later pinned overlay recorded below.
 
 ### MLX protocol diagnosis, 2026-10-31
 
@@ -52,6 +54,14 @@ Router liveness does not prove model serving: the Mac acceptance run must includ
 - Host and image: the same MacBook Pro M4 Max and `ghcr.io/jhwohlgemuth/indigo:0.1.4-mlx-arm64` described above. Native MLX ran in a test-owned launch agent on port 10735; an isolated `indigo-plt04` Compose project routed `mlx/default_model` through port 10732.
 - Checkpoint: `mlx-community/Qwen3-4B-Instruct-2507-4bit`, revision `50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b`; `model.safetensors` SHA-256 `2a73c6c248601ab904e035548abd8e6abb65ea27dcb5f342fb0a8910eb44173f`; tokenizer config SHA-256 `4397cc477eb6d79715ccd2000accd6b3531928f30029665832fa1b255f24d2b9`.
 - `python3 scripts/mlx-model-check.py` reported one complete 2,263,022,417-byte weight shard. Running `scripts/mlx-acceptance.py` directly against the native server and again through `llama-swap` produced a clean streamed `INDIGO_READY`, a structured `get_temperature({"city":"Boston"})` call with an ID, and a final response using the supplied `17` degree result. No channel markers or textual pseudo-calls appeared.
-- This closes the MLX server/checkpoint output-contract defect. PLT-03 still requires the ARM64 code-server repair, OpenCode selection, stop/restart, and preservation checks before the overall Apple Silicon path is accepted.
+- This closes the MLX server/checkpoint output-contract defect. With the later ARM64 code-server repair complete, PLT-03 still requires OpenCode selection, stop/restart, and preservation checks before the overall Apple Silicon path is accepted.
 
-The MLX acceptance gate for optional Uzu work remains closed. After correcting the ARM64 image defect, rerun the qualified Qwen3 contract through `make up-mlx`, then verify OpenCode selection, stop, restart, and preserved user configuration.
+### ARM64 code-server repair, 2026-11-01
+
+- Host: Docker host `Dante`, Ubuntu 24.04.5 LTS, Linux ARM64, Docker Engine 29.1.3.
+- Image: local `indigo:code-server-arm64`, ID `sha256:b4fc9d782b9d2e0d5b3223a4533a044c56c64e32e626d8ab0f73ef9b3b9260cc`, 10,819,992,942 bytes. The build reused the inference and dependency layers and completed in 10 seconds.
+- Repair input: official code-server 4.143.1 multi-platform image index `sha256:377b66bec5645510ed52549bb00e648c273edc604d230a3f90fd2b2433afcb97`. INDIGO copies the complete matching bundle over the inherited `/app/code-server` tree so Node and native modules move together.
+- `/app/code-server/lib/node`, Argon2, node-pty, spdlog, Parcel watcher, and SQLite native modules all reported ELF machine `AArch64`; `code-server --version` reported 4.143.1 / Code 1.143.1.
+- `scripts/runtime-smoke.sh indigo:code-server-arm64` passed code-server, Verdaccio, Jupyter, Marimo, inference-router, Filesystem MCP, Rust Analyzer MCP, both MCP protocol probes, and graceful shutdown. The disposable container was removed.
+
+The MLX acceptance gate for optional Uzu work remains closed. Rerun the qualified Qwen3 contract through `make up-mlx`, then verify OpenCode selection, stop, restart, and preserved user configuration.
