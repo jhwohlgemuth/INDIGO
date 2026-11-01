@@ -50,7 +50,7 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 - Status: planned
 - Budget: 5 active hours maximum
-- Prerequisites: EFF-01, REP-01; provisioned image builder
+- Prerequisites: EFF-01; provisioned image builder
 - Exact write set: `Dockerfile`, `scripts/build_llama_cpp_from_source.sh`, `.dockerignore`
 - Primary integration lock: image-build
 - Outcome: Reorder or stage build artifacts, use shallow pinned source retrieval, and exclude .wiki and instance env files from context.

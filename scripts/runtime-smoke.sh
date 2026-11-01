@@ -26,8 +26,8 @@ docker run --detach \
     --restart no \
     --shm-size 1gb \
     --env INDIGO_ENABLE_INFERENCE=1 \
-    --env INDIGO_ENABLE_FILESYSTEM=0 \
-    --env INDIGO_ENABLE_RUST_ANALYZER=0 \
+    --env INDIGO_ENABLE_FILESYSTEM=1 \
+    --env INDIGO_ENABLE_RUST_ANALYZER=1 \
     --env INDIGO_ENABLE_OPENVIKING=0 \
     --env INDIGO_ENABLE_PINOKIO=0 \
     "${image}" sleep infinity > /dev/null
@@ -57,5 +57,57 @@ docker exec "${container}" /bin/bash -c '
     command -v llama-server
 ' > /dev/null
 
+mcp_request() {
+    local port="$1"
+    local payload="$2"
+
+    docker exec "${container}" curl \
+        --fail-with-body \
+        --silent \
+        --show-error \
+        --max-time 30 \
+        --header 'Content-Type: application/json' \
+        --header 'Accept: application/json, text/event-stream' \
+        --data "${payload}" \
+        "http://127.0.0.1:${port}/mcp"
+}
+
+assert_mcp_response() {
+    local request_id="$1"
+    local result_field="$2"
+
+    python3 -c '
+import json
+import sys
+
+request_id = int(sys.argv[1])
+result_field = sys.argv[2]
+body = sys.stdin.read().strip()
+events = [line[5:].strip() for line in body.splitlines() if line.startswith("data:")]
+message = json.loads(events[-1] if events else body)
+if message.get("jsonrpc") != "2.0" or message.get("id") != request_id:
+    raise SystemExit(f"unexpected MCP response: {message}")
+if "error" in message:
+    raise SystemExit("MCP request failed: " + repr(message["error"]))
+result = message.get("result")
+if not isinstance(result, dict) or result_field not in result:
+    raise SystemExit(f"MCP response has no {result_field}: {message}")
+if result_field == "tools" and not result[result_field]:
+    raise SystemExit("MCP server returned no tools")
+' "${request_id}" "${result_field}"
+}
+
+initialize_payload='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"indigo-runtime-smoke","version":"1"}}}'
+tools_payload='{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+for endpoint in filesystem:11002 rust-analyzer:11003; do
+    service="${endpoint%%:*}"
+    port="${endpoint##*:}"
+    echo "checking ${service} MCP initialization and tools/list"
+    mcp_request "${port}" "${initialize_payload}" \
+        | assert_mcp_response 1 serverInfo
+    mcp_request "${port}" "${tools_payload}" \
+        | assert_mcp_response 2 tools
+done
+
 docker stop --time 15 "${container}" > /dev/null
-echo "runtime startup and shutdown passed for ${image}"
+echo "runtime startup, MCP protocol, and shutdown passed for ${image}"

@@ -16,7 +16,7 @@ The table below separates the launch path each platform is *configured* to use f
 | Windows x86_64 with WSL2 and NVIDIA | Compose or standalone GPU launch | Compose rendering checked in CI; no recorded runtime result |
 | Windows x86_64 with WSL2, CPU only | `compose.cpu.yaml` or `make run GPU=0` | Compose rendering checked in CI; no recorded runtime result |
 | macOS Intel, Docker Linux VM | CPU launch without `--gpus all` | No recorded runtime result |
-| macOS Apple Silicon, Docker Linux VM | `make up-mlx MLX_MODEL=...`, ARM64 CPU INDIGO image and native host MLX | Pinned ARM64 image built; native and routed model discovery passed; streamed output, structured tool call and full container health failed on 2026-10-27 |
+| macOS Apple Silicon, Docker Linux VM | `make up-mlx MLX_MODEL=...`, ARM64 CPU INDIGO image and native host MLX | Pinned ARM64 image built; clean routed streaming and a structured tool-result round trip passed with the qualified Qwen3 checkpoint on 2026-10-31; full container health still fails on the inherited code-server bundle |
 | Linux with AMD GPU | CPU launch only | No accelerated backend packaged |
 
 ## CPU-only launch
@@ -41,4 +41,17 @@ Router liveness does not prove model serving: the Mac acceptance run must includ
 - The routed streamed completion included raw `<|channel|>analysis` and `<|message|>` control tokens. A request for `get_temperature` produced a textual `to=functions.get_temperature` sequence in `message.content`, with no structured `tool_calls`. The tool-result round trip and OpenCode client selection therefore remain unverified. The local `mlx-lm` tokenizer parser inference has no parser match for this checkpoint's template; whether a different supported checkpoint or host-server fix resolves both output defects requires a new acceptance run.
 - `make runtime-smoke IMAGE_REF=ghcr.io/jhwohlgemuth/indigo:0.1.4-mlx-arm64` timed out: Verdaccio, Jupyter, Marimo, and the inference router passed, but code-server was unreachable. The inherited `/app/code-server/lib/node` in the pinned ARM64 image has ELF machine ID 62 (x86-64); its service log repeats `rosetta error: failed to open elf at /lib64/ld-linux-x86-64.so.2`. The image needs an ARM64 code-server bundle before full health can pass.
 
-The MLX acceptance gate for optional Uzu work remains closed. Re-run the script after correcting the model/server output contract and the ARM64 image defect, then verify OpenCode selection, stop, restart, and preserved user configuration.
+### MLX protocol diagnosis, 2026-10-31
+
+- The installed and latest released server is still `mlx-lm==0.32.2`. The downloaded GPT-OSS checkpoint has a complete Harmony chat template but does not declare an `mlx-lm` `tool_parser_type`; the released server's parser inference has no GPT-OSS/Harmony match. Its recorded runtime warning, `Received tools but model does not support tool calling`, is therefore a server/checkpoint protocol mismatch rather than a router defect.
+- Upstream [issue 875](https://github.com/ml-explore/mlx-lm/issues/875) remains open and records the same GPT-OSS channel leakage, missing or unreliable structured calls, and especially poor tool reliability for 20B variants. The upstream [0.32.2 release](https://github.com/ml-explore/mlx-lm/releases/tag/v0.32.2) contains no GPT-OSS protocol adapter. Do not add output filtering or accept recovered textual calls as structured API compatibility.
+- The qualified contract is `mlx-lm==0.32.2` with `mlx-community/Qwen3-4B-Instruct-2507-4bit` at Hugging Face revision `50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b`. Its tokenizer explicitly selects the supported `json_tools` parser. Keep the GPT-OSS hashes above as failing evidence; do not rewrite its tokenizer files or use it for the routed acceptance gate.
+
+### Compatible protocol run, 2026-10-31
+
+- Host and image: the same MacBook Pro M4 Max and `ghcr.io/jhwohlgemuth/indigo:0.1.4-mlx-arm64` described above. Native MLX ran in a test-owned launch agent on port 10735; an isolated `indigo-plt04` Compose project routed `mlx/default_model` through port 10732.
+- Checkpoint: `mlx-community/Qwen3-4B-Instruct-2507-4bit`, revision `50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b`; `model.safetensors` SHA-256 `2a73c6c248601ab904e035548abd8e6abb65ea27dcb5f342fb0a8910eb44173f`; tokenizer config SHA-256 `4397cc477eb6d79715ccd2000accd6b3531928f30029665832fa1b255f24d2b9`.
+- `python3 scripts/mlx-model-check.py` reported one complete 2,263,022,417-byte weight shard. Running `scripts/mlx-acceptance.py` directly against the native server and again through `llama-swap` produced a clean streamed `INDIGO_READY`, a structured `get_temperature({"city":"Boston"})` call with an ID, and a final response using the supplied `17` degree result. No channel markers or textual pseudo-calls appeared.
+- This closes the MLX server/checkpoint output-contract defect. PLT-03 still requires the ARM64 code-server repair, OpenCode selection, stop/restart, and preservation checks before the overall Apple Silicon path is accepted.
+
+The MLX acceptance gate for optional Uzu work remains closed. After correcting the ARM64 image defect, rerun the qualified Qwen3 contract through `make up-mlx`, then verify OpenCode selection, stop, restart, and preserved user configuration.

@@ -6,7 +6,7 @@ difficulty: medium
 impact: high
 package: [indigo]
 tags: [reproducible-builds, project-review]
-status: in-progress
+status: planned
 execution: phased
 phase_budget_hours: 5
 ---
@@ -15,11 +15,11 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Rechecked 2026-10-27. `scripts/build_llama_cpp_from_source.sh` still clones llama.cpp default HEAD without checkout, and Homebrew installs current hf and llama-swap. The direct Notebook base is pinned to the published 1.0.5 multi-platform index digest, and an ARM64 image built from it; other OCI bases remain mutable. The [latest published Linux run](https://github.com/jhwohlgemuth/INDIGO/actions/runs/40573556693) passed checkout, verified shfmt installation, shell checks and lint before losing the runner during the full image build. `docs/dependency-updates.md` records the inputs and update process. A local CPU validation image builds and passes content smoke; Linux CI validation is pending.
+Rechecked 2026-10-31. llama.cpp now defaults to the reviewed v0.8.0 commit `8642541b255bfb5dc39cd351a178be09013a55d6`, checks it out detached, rejects non-full or mismatched revisions, and records it in the image label `org.indigo.llama.cpp.revision`. `tests/build-inputs.sh` covers the contract. A real ARM64 CPU image build reports the expected label and `llama-server` commit. The direct Notebook base remains pinned to the published 1.0.5 multi-platform index digest; other OCI bases remain mutable, and Homebrew still installs current hf and llama-swap without version guards. The latest published Linux workflow at `59b13c0` built and booted the CPU image successfully; a run containing the pinned inference source is pending.
 
 ## Boundaries and decisions
 
-Start with the inference dependency: select a reviewed full upstream commit, pass it as a Docker build argument, check it out detached, and label the built image with the revision. Handle remaining OCI base images and Homebrew version guards in separate phases with a shared update record. Do not assert bit-for-bit reproducibility while apt, Homebrew and transitive package resolution remain unlocked. An ARM64 Docker builder is available; Linux CI has not built the image successfully.
+Handle the remaining OCI base images and Homebrew version guards in separate phases with a shared update record. Do not assert bit-for-bit reproducibility while apt, Homebrew and transitive package resolution remain unlocked. ARM64 Docker and Linux CI builders have both built the CPU image successfully.
 
 ## Dependencies
 
@@ -35,22 +35,11 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 # Execution phases
 
-## REP-01 — Pin the inference source revision
+## REP-02 — Pin OCI base image inputs
 
 - Status: ready
 - Budget: 5 active hours maximum
-- Prerequisites: provisioned image builder and access to the selected upstream llama.cpp revision
-- Exact write set: `scripts/build_llama_cpp_from_source.sh`, `Dockerfile`, `tests/build-inputs.sh`
-- Primary integration lock: image-build
-- Outcome: Use one reviewed full llama.cpp commit SHA as the default build argument, reject invalid revisions, and record the checked-out revision in image metadata.
-- Focused validation: Verify invalid revisions fail, the requested commit is checked out, and the compiled binary reports the expected version on a provisioned builder.
-- Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
-
-## REP-02 — Pin OCI base image inputs
-
-- Status: blocked
-- Budget: 5 active hours maximum
-- Prerequisites: REP-01; access to upstream registries and a provisioned image builder
+- Prerequisites: access to upstream registries and a provisioned image builder
 - Exact write set: `Dockerfile`, `docs/dependency-updates.md`
 - Primary integration lock: image-build
 - Outcome: Replace mutable `FROM` references with reviewed tag-plus-digest references and document how to review updates and the remaining apt/pip/npm resolution risk.
@@ -59,7 +48,7 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 ## REP-04 — Guard Homebrew tool versions
 
-- Status: blocked
+- Status: ready
 - Budget: 5 active hours maximum
 - Prerequisites: access to Homebrew sources and a provisioned image builder
 - Exact write set: `Dockerfile`, `docs/dependency-updates.md`

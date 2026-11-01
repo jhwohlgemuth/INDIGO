@@ -12,8 +12,7 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 
 ## [Pin and verify build inputs](reproducible-builds.md)
 
-- REP-01: No feature prerequisite; provisioned image builder and access to the selected upstream revision
-- REP-02: REP-01; access to upstream registries and a provisioned image builder
+- REP-02: Access to upstream registries and a provisioned image builder
 - REP-04: No feature prerequisite; access to Homebrew sources and a provisioned image builder
 
 ## [Test service behavior before releasing images](runtime-ci.md)
@@ -28,10 +27,9 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 
 ## [Verify platform support, CPU inference, and Apple Silicon MLX](platform-contract.md)
 
-- PLT-02: REP-01; provisioned builder and approved CPU model fixture
-- PLT-03: PLT-04, PLT-05; Apple Silicon Mac, working Docker daemon and approved complete MLX-format model
-- PLT-04: Apple Silicon Mac and approved tool-capable MLX checkpoint
-- PLT-05: Notebook image build/release access and ARM64 Docker validation host
+- PLT-02: Provisioned builder and approved CPU model fixture
+- PLT-03: PLT-05; Apple Silicon Mac, working Docker daemon and qualified Qwen3 MLX checkpoint
+- PLT-05: Write/release access to `jhwohlgemuth/my-shell-setup` and `jhwohlgemuth/gold`, plus an ARM64 Docker validation host
 
 ## [Add optional Apple Silicon Uzu inference support](uzu-support.md)
 
@@ -58,7 +56,7 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 ## [Reduce measured build and idle resource costs](build-and-runtime-efficiency.md)
 
 - EFF-01: Accessible benchmark Docker host and fixed image input revisions
-- EFF-02: EFF-01, REP-01; provisioned image builder
+- EFF-02: EFF-01; provisioned image builder
 - EFF-03: TST-02
 - EFF-04: EFF-01, PRT-02; accessible benchmark Docker host
 

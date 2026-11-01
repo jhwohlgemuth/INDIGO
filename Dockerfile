@@ -3,6 +3,7 @@ ARG NOTEBOOK_DIGEST=sha256:c3256bd1d46ffd71f6c7b95cc0da7cca1c2ddc417070f3a7622bd
 ARG PINOKIO_NODE_VERSION=20
 ARG PINOKIO_COMMIT=2c39f9fe9c40c985e03b13ab8a48ead908139b39
 ARG MCP_NODE_VERSION=24
+ARG LLAMA_CPP_COMMIT=8642541b255bfb5dc39cd351a178be09013a55d6
 
 FROM node:${PINOKIO_NODE_VERSION} AS pinokio-source
 ARG PINOKIO_COMMIT
@@ -37,6 +38,7 @@ RUN rustup component add rust-analyzer rust-src \
     && cargo install --locked --version "${RUST_ANALYZER_MCP_VERSION}" rust-analyzer-mcp
 
 FROM ghcr.io/jhwohlgemuth/notebook:${NOTEBOOK_VERSION}@${NOTEBOOK_DIGEST}
+ARG LLAMA_CPP_COMMIT
 #
 # %labels
 #
@@ -45,6 +47,7 @@ LABEL org.opencontainers.image.source="https://github.com/jhwohlgemuth/indigo"
 LABEL org.opencontainers.image.title="Indigo"
 LABEL org.opencontainers.image.description="A local workshop for agentic software development"
 LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.indigo.llama.cpp.revision="${LLAMA_CPP_COMMIT}"
 #
 # %arguments
 #
@@ -129,7 +132,8 @@ RUN if [ "${INDIGO_LLAMA_BACKEND}" = cuda ]; then install_cuda_toolkit; \
     elif [ "${INDIGO_LLAMA_BACKEND}" != cpu ]; then echo "unsupported llama backend: ${INDIGO_LLAMA_BACKEND}" >&2; exit 1; fi \
     && install -d -m 0755 -o "${USER_NAME}" -g "${USER_NAME}" "${MODEL_DIRECTORY}" "${HOME}/.config/llama-swap"
 RUN sed -i 's/\r$//' /tmp/build_llama_cpp_from_source.sh \
-    && INDIGO_LLAMA_BACKEND="${INDIGO_LLAMA_BACKEND}" \
+    && LLAMA_CPP_COMMIT="${LLAMA_CPP_COMMIT}" \
+        INDIGO_LLAMA_BACKEND="${INDIGO_LLAMA_BACKEND}" \
         INDIGO_LLAMA_BUILD_JOBS="${INDIGO_LLAMA_BUILD_JOBS}" \
         bash /tmp/build_llama_cpp_from_source.sh \
     && rm -f /tmp/build_llama_cpp_from_source.sh

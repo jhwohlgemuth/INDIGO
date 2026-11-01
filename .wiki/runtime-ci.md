@@ -15,7 +15,7 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Rechecked 2026-10-27 at commit 687a306. The [published Linux CI run](https://github.com/jhwohlgemuth/INDIGO/actions/runs/40573556693) passed installation, `make check`, and `make lint`, then lost the hosted runner while building the full image. Windows configuration passed. The workflow now builds a CPU validation image with bounded llama.cpp compilation and frees unused runner toolchains before build; its new Linux result is pending. The startup smoke boots `/init` in a disposable container and checks full health, seeded config, and shutdown. A local pinned ARM64 run failed because the inherited code-server bundle contains an x86-64 Node binary. Router health is not model-serving proof.
+Rechecked 2026-10-31. The [published Linux CI run](https://github.com/jhwohlgemuth/INDIGO/actions/runs/40610089368) at `59b13c0` passed installation, `make check`, `make lint`, the CPU image build, content smoke, startup and shutdown; Windows configuration also passed. The runtime smoke now enables both bundled MCP services and performs bounded Streamable HTTP initialization and tools/list assertions. Isolated local probes pass for both services, but the full new script still needs Linux CI evidence because the available ARM64 base has the separate PLT-05 code-server defect. Router health is not model-serving proof.
 
 ## Boundaries and decisions
 
@@ -44,7 +44,7 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 - Primary integration lock: ci-workflow
 - Outcome: Verify real service lifecycle with a bounded CI timeout.
 - Focused validation: Boot through /init, inspect health, execute MCP initialization/list-tools, stop within the configured grace period and collect failure logs; always clean only test-owned resources.
-- Handoff: `scripts/runtime-smoke.sh`, the Make target, and the Linux workflow step are added. A local CPU image build and content smoke pass; the ARM64 runtime smoke fails only code-server health, tracked by PLT-05. Keep this phase until the Linux amd64 workflow passes image build, startup, shutdown, and the remaining MCP initialization/list-tools check.
+- Handoff: `scripts/runtime-smoke.sh`, the Make target, and the Linux workflow step are added. The previous Linux run passes image build, startup and shutdown; isolated local initialization/list-tools probes pass for both MCP services. Keep this phase until the Linux amd64 workflow passes the combined runtime smoke containing those assertions.
 
 ## TST-03 — Add an explicit model-serving acceptance job
 

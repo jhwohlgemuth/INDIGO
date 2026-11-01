@@ -1,12 +1,17 @@
 #! /bin/bash
 set -euo pipefail
 
+backend="${INDIGO_LLAMA_BACKEND:-cuda}"
+build_jobs="${INDIGO_LLAMA_BUILD_JOBS:-2}"
+llama_cpp_commit="${LLAMA_CPP_COMMIT:-}"
+if [[ ! "${llama_cpp_commit}" =~ ^[0-9a-f]{40}$ ]]; then
+    echo "error: LLAMA_CPP_COMMIT must be a full lowercase 40-character commit SHA" >&2
+    exit 1
+fi
 requires \
     cmake \
     git \
     ldd
-backend="${INDIGO_LLAMA_BACKEND:-cuda}"
-build_jobs="${INDIGO_LLAMA_BUILD_JOBS:-2}"
 if [[ ! "${build_jobs}" =~ ^[1-9][0-9]*$ ]]; then
     echo "error: INDIGO_LLAMA_BUILD_JOBS must be a positive integer" >&2
     exit 1
@@ -57,6 +62,7 @@ verify_binaries() {
 }
 main() {
     local -a CMAKE_ARGS_ARRAY=()
+    local checked_out_commit
     local SRC_DIRECTORY="${HOME}/llamacpp"
     local BUILD_DIRECTORY="${SRC_DIRECTORY}/build"
     local LIB_DIRECTORY=/usr/local/lib
@@ -75,6 +81,15 @@ main() {
     fi
     git clone https://github.com/ggml-org/llama.cpp.git "${SRC_DIRECTORY}"
     pushd "${SRC_DIRECTORY}" > /dev/null || exit
+    if ! git checkout --detach "${llama_cpp_commit}"; then
+        echo "error: LLAMA_CPP_COMMIT does not resolve in the cloned llama.cpp repository: ${llama_cpp_commit}" >&2
+        exit 1
+    fi
+    checked_out_commit="$(git rev-parse HEAD)"
+    if [[ "${checked_out_commit}" != "${llama_cpp_commit}" ]]; then
+        echo "error: checked out llama.cpp revision ${checked_out_commit}, expected ${llama_cpp_commit}" >&2
+        exit 1
+    fi
     cmake -B build \
         "${BACKEND_ARGS[@]}" \
         -DGGML_BACKEND_DL=ON \
