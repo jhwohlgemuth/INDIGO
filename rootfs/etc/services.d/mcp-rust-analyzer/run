@@ -13,7 +13,7 @@ port="${MCP_RUST_ANALYZER_PORT:-11003}"
 install -d -m 0755 "${workspace}"
 
 exec /opt/mcp/node/bin/supergateway \
-	--stdio "/usr/local/bin/rust-analyzer-mcp ${workspace}" \
+	--stdio /etc/services.d/mcp-rust-analyzer/child \
 	--outputTransport streamableHttp \
 	--port "${port}" \
 	--healthEndpoint /healthz

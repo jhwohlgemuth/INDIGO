@@ -13,7 +13,7 @@ port="${MCP_FILESYSTEM_PORT:-11002}"
 install -d -m 0755 "${workspace}"
 
 exec /opt/mcp/node/bin/supergateway \
-	--stdio "/opt/mcp/node/bin/mcp-server-filesystem ${workspace}" \
+	--stdio /etc/services.d/mcp-filesystem/child \
 	--outputTransport streamableHttp \
 	--port "${port}" \
 	--healthEndpoint /healthz

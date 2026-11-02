@@ -181,6 +181,7 @@ run:
 		--publish "$(INDIGO_PUBLISH_HOST):$(MCP_RUST_ANALYZER_PUBLISHED_PORT):11003" \
 		--volume "$(CONTAINER)-workspace:$(INDIGO_HOME)/dev" \
 		--volume "$(CONTAINER)-models:$(INDIGO_HOME)/.models" \
+		--volume "$(CONTAINER)-llama-swap-config:$(INDIGO_HOME)/.config/llama-swap" \
 		--volume "$(CONTAINER)-openviking:$(INDIGO_HOME)/.openviking" \
 		--volume "$(CONTAINER)-pinokio:$(INDIGO_HOME)/.pinokio" \
 		--volume "$(CONTAINER)-opencode-config:$(INDIGO_HOME)/.config/opencode" \

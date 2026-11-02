@@ -6,18 +6,13 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 
 - NET-02: Accessible Docker host and disposable OpenViking 0.4.17 config with root and tenant user keys
 
-## [Render model and workspace paths safely](safe-config-rendering.md)
-
-- CFG-02: No feature prerequisite; provisioned image or Docker host for live MCP validation
-
 ## [Test service behavior before releasing images](runtime-ci.md)
 
 - TST-03: Approved small model fixture and available CPU validation host
 
-## [Preserve router configuration and document recovery](persistent-state.md)
+## [Document and rehearse backup recovery](persistent-state.md)
 
-- DAT-01: No feature prerequisite; accessible Docker host with disposable container and named volume
-- DAT-02: DAT-01; accessible Docker host with disposable test volumes
+- DAT-02: Accessible Docker host with disposable test volumes
 
 ## [Verify platform support, CPU inference, and Apple Silicon MLX](platform-contract.md)
 

@@ -110,6 +110,12 @@ OpenCode, Codex, OpenViking, Pinokio, and Cargo state use named volumes.
 First-run router and agent configuration is seeded only when its destination is
 absent. Existing user configuration is not replaced on restart.
 
+The fully persistent standalone `make run` path mounts nine instance-named
+volumes for the workspace, models, router configuration, OpenCode configuration
+and data, Codex, OpenViking, Pinokio, and Cargo. Router configuration uses
+`<container>-llama-swap-config` at `/home/nonroot/.config/llama-swap`, so it
+survives removing and recreating the container with the same instance name.
+
 ### Optional MCP defaults
 
 Full Compose enables Filesystem MCP, Rust Analyzer MCP, and OpenViking in the

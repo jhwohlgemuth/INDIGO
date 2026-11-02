@@ -1,16 +1,15 @@
 # INDIGO planning portfolio
 
-Updated 2026-11-02. This portfolio contains 7 executable plans, including five high impact plans. Sorting is impact descending, then difficulty ascending; ties favor user-visible correctness and stronger evidence. Difficulty is relative remaining engineering complexity, not elapsed duration. Every phase is capped at five active hours; larger plans have multiple phases. The qualified Apple Silicon MLX path now passes streaming, tool calls, default OpenCode selection, and restart preservation; optional Uzu support waits on a Uzu-format checkpoint and upstream source/toolchain access.
+Updated 2026-11-02. This portfolio contains 6 executable plans, including four high impact plans. Sorting is impact descending, then difficulty ascending; ties favor user-visible correctness and stronger evidence. Difficulty is relative remaining engineering complexity, not elapsed duration. Every phase is capped at five active hours; larger plans have multiple phases. The qualified Apple Silicon MLX path now passes streaming, tool calls, default OpenCode selection, and restart preservation; optional Uzu support waits on a Uzu-format checkpoint and upstream source/toolchain access.
 
 | Rank | Remaining outcome | Impact | Difficulty |
 | --- | --- | --- | --- |
 | 1 | [Make OpenViking host access explicit and secure](openviking-access.md) | high | medium |
-| 2 | [Render model and workspace paths safely](safe-config-rendering.md) | high | medium |
-| 3 | [Test service behavior before releasing images](runtime-ci.md) | high | medium |
-| 4 | [Preserve router configuration and document recovery](persistent-state.md) | high | medium |
-| 5 | [Verify platform support, CPU inference, and Apple Silicon MLX](platform-contract.md) | high | high |
-| 6 | [Reduce measured build and idle resource costs](build-and-runtime-efficiency.md) | medium | high |
-| 7 | [Add optional Apple Silicon Uzu inference support](uzu-support.md) | medium | high |
+| 2 | [Test service behavior before releasing images](runtime-ci.md) | high | medium |
+| 3 | [Document and rehearse backup recovery](persistent-state.md) | high | medium |
+| 4 | [Verify platform support, CPU inference, and Apple Silicon MLX](platform-contract.md) | high | high |
+| 5 | [Reduce measured build and idle resource costs](build-and-runtime-efficiency.md) | medium | high |
+| 6 | [Add optional Apple Silicon Uzu inference support](uzu-support.md) | medium | high |
 
 ## Navigation
 
@@ -19,7 +18,7 @@ Updated 2026-11-02. This portfolio contains 7 executable plans, including five h
 
 ## Review scope and limitations
 
-Inspected all tracked application scripts, service definitions, image/build configuration, agent/router templates, CI and user/architecture documentation. No CodeGraph directory exists. The initial worktree was clean. Recent history includes the portability merge, user-story work and source-built inference support; recommendations account for existing CPU/isolated overrides, loopback publishing, pinned Pinokio and bounded OpenViking retries. Local implementation now includes bounded parallel health checks, safe model config seeding, corrected OpenViking access documentation, standalone GPU selection, a strict non-evaluating environment contract, transactional instance generation with base-port collision rejection, a fixed 10732 internal inference contract with configurable host publishing, pinned direct OCI bases and CI tools, guarded Homebrew tool versions, and a verified first-response documentation route.
+Inspected all tracked application scripts, service definitions, image/build configuration, agent/router templates, CI and user/architecture documentation. No CodeGraph directory exists. The initial worktree was clean. Recent history includes the portability merge, user-story work and source-built inference support; recommendations account for existing CPU/isolated overrides, loopback publishing, pinned Pinokio and bounded OpenViking retries. Local implementation now includes bounded parallel health checks, safe model config seeding, literal MCP workspace argument handling through fixed child wrappers, standalone router configuration persistence, corrected OpenViking access documentation, standalone GPU selection, a strict non-evaluating environment contract, transactional instance generation with base-port collision rejection, a fixed 10732 internal inference contract with configurable host publishing, pinned direct OCI bases and CI tools, guarded Homebrew tool versions, and a verified first-response documentation route.
 
 All Compose combinations pass configuration validation. Docker Desktop is available. The pinned ARM64 image builds; native and routed Qwen3 MLX streaming, a structured tool-result round trip, default OpenCode selection, and full stop/restart preservation pass. The complete ARM64 container/MCP runtime smoke also passes with the pinned code-server overlay recorded in `docs/platform-support.md`. The published Linux CI run at 75c4d64 passes tool installation, shell checks, lint, the pinned CPU image build, content smoke, startup, both bundled MCP protocol checks, and shutdown. Local `make check`, pinned llama.cpp CPU image build/metadata validation, and isolated MCP protocol probes also pass. Controlled build/cache and no-model idle measurements are recorded in `docs/performance.md`; host power remained unavailable, so no energy claim is made. Review is not a vulnerability audit.
 

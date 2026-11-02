@@ -1,7 +1,7 @@
 ---
 type: Plan
-title: Preserve router configuration and document recovery
-description: A customized router configuration survives run-mode container recreation; documented backup restoration recovers a sample workspace, configuration and state into a separate instance.
+title: Document and rehearse backup recovery
+description: Documented backup restoration recovers a sample workspace, configuration and state into a separate instance.
 difficulty: medium
 impact: high
 package: [indigo]
@@ -11,15 +11,15 @@ execution: phased
 phase_budget_hours: 5
 ---
 
-# Preserve router configuration and document recovery
+# Document and rehearse backup recovery
 
 ## Current evidence
 
-Rechecked 2026-10-22 at commit db2c536517837492b31007cf86688ec6b7e23fa3. `Makefile` run mounts eight volumes but omits `/home/nonroot/.config/llama-swap`, whereas Compose persists it. The quick-start workspace is explicitly ephemeral. README lists persistent data but contains no backup/restore procedure, migration checks or restore rehearsal.
+Rechecked 2026-11-02. The fully persistent `make run` mode mounts nine instance-named volumes, including `/home/nonroot/.config/llama-swap`; `tests/run-mounts.sh` asserts the exact set. A disposable ARM64 container recreation preserved a customized router configuration byte-for-byte with `nonroot:nonroot` ownership and mode `644`. The quick-start workspace remains explicitly ephemeral. README lists persistent data but contains no backup/restore procedure, migration checks or restore rehearsal.
 
 ## Boundaries and decisions
 
-Add router persistence to the fully persistent `make run` mode. Keep quick-start behavior explicit. Back up workspace, router config, and agent/OpenViking/Pinokio state from a stopped instance; exclude re-downloadable model and cache data by default. Restore into a differently named disposable instance with private credential handling. No Docker daemon was available for the required rehearsal.
+Keep quick-start behavior explicit. Back up workspace, router config, and agent/OpenViking/Pinokio state from a stopped instance; exclude re-downloadable model and cache data by default. Restore into a differently named disposable instance with private credential handling.
 
 ## Dependencies
 
@@ -27,7 +27,7 @@ Phase prerequisites below are the authoritative blockers. Shared integration loc
 
 ## Acceptance criteria
 
-A customized router configuration survives run-mode container recreation; documented backup restoration recovers a sample workspace, configuration and state into a separate instance.
+Documented backup restoration recovers a sample workspace, configuration and state into a separate instance.
 
 ## Validation
 
@@ -35,22 +35,11 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 # Execution phases
 
-## DAT-01 — Persist standalone router configuration
-
-- Status: blocked
-- Budget: 5 active hours maximum
-- Prerequisites: accessible Docker host with disposable container and named volume
-- Exact write set: `Makefile`, `README.md`, `tests/run-mounts.sh`
-- Primary integration lock: standalone-launch
-- Outcome: Add the missing named volume and reconcile the volume count.
-- Focused validation: Inspect dry-run docker arguments; on a disposable instance edit router config, recreate the container with the same volume and compare content.
-- Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
-
 ## DAT-02 — Add and rehearse recovery instructions
 
-- Status: blocked
+- Status: ready
 - Budget: 5 active hours maximum
-- Prerequisites: DAT-01; accessible Docker host with disposable test volumes
+- Prerequisites: accessible Docker host with disposable test volumes
 - Exact write set: `docs/backup-restore.md`, `README.md`
 - Primary integration lock: runtime-docs
 - Outcome: Document consistent stop/snapshot/restore steps, included paths, exclusions and rollback.
