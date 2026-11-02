@@ -10,15 +10,16 @@ ifneq ($(ENV_FILE),)
 include $(ENV_FILE)
 endif
 
-.PHONY: prepare format check check-env lint build image-smoke runtime-smoke push compose-build up up-cpu up-isolated up-mlx down down-mlx mlx-setup mlx-model mlx-model-download mlx-model-check mlx-model-self-test mlx-status restart logs ps filesystem rust instance start run stop rm exec
+.PHONY: prepare format check check-env lint book book-write build image-smoke runtime-smoke push compose-build up up-cpu up-isolated up-mlx down down-mlx mlx-setup mlx-model mlx-model-download mlx-model-check mlx-model-self-test mlx-status restart logs ps filesystem rust instance start run stop rm exec
 
 COMPOSE ?= docker compose
 YAMLLINT ?= yamllint
+MDBOOK ?= mdbook
 COMPOSE_ARGS ?= -f ./compose.yaml $(if $(ENV_FILE),--env-file $(ENV_FILE),)
 DOCKER_FILES := ./Dockerfile $(wildcard ./containers/*/Dockerfile)
 SHELL_FILES := $(wildcard ./scripts/*.sh) $(wildcard ./rootfs/etc/cont-init.d/*) $(wildcard ./rootfs/etc/services.d/*/*) $(wildcard ./rootfs/opt/*/bin/*) $(wildcard ./tests/*.sh)
 TEST_FILES := $(wildcard ./tests/*.sh)
-YAML_FILES := $(wildcard ./config/*/*.yaml) $(wildcard ./.github/workflows/*.yml ./.github/workflows/*.yaml) $(wildcard ./compose*.yaml)
+YAML_FILES := $(wildcard ./config/*/*.yaml) $(wildcard ./.github/workflows/*.yml ./.github/workflows/*.yaml) $(wildcard ./.gitlab-ci.yml) $(wildcard ./compose*.yaml)
 FORMAT_FILES := ./.shellcheckrc $(SHELL_FILES) $(YAML_FILES)
 
 CONTAINER ?= $(INDIGO_HOSTNAME)
@@ -62,6 +63,12 @@ lint:
 	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.minimal.yaml config --quiet
 	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.cpu.yaml -f ./compose.isolated.yaml -f ./compose.minimal.yaml config --quiet
 	@$(COMPOSE) $(COMPOSE_ARGS) -f ./compose.mlx.yaml config --quiet
+
+book:
+	@$(MDBOOK) build docs
+
+book-write:
+	@$(MDBOOK) serve docs
 
 compose-build:
 	@$(COMPOSE) $(COMPOSE_ARGS) build

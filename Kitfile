@@ -2,7 +2,7 @@ manifestVersion: 1.0.0
 
 package:
   name: indigo
-  version: 0.1.2
+  version: 0.1.4
   description: >-
     Isolated Native Development Instance for Generative Operations: a
     GPU-enabled, local-first environment for model inference, coding agents,
@@ -42,7 +42,11 @@ code:
 
 docs:
   - path: ./README.md
-    description: Setup, operation, endpoint, persistence, and security guidance.
+    description: Project overview, readiness contract, deployment choices, and documentation routes.
+  - path: ./docs/getting-started.md
+    description: Model acquisition through the first verified API and OpenCode responses.
+  - path: ./docs/troubleshooting.md
+    description: Layered container, router, model, client, MCP, and persistence diagnostics.
   - path: ./ARCHITECTURE.md
     description: Service topology, ownership boundaries, and trust model.
   - path: ./LICENSE

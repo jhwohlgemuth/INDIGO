@@ -15,7 +15,7 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Reviewed 2026-11-01 against commit c70dba762ef17a93c9da080a4341a6e29a864916 with local changes. Compose allows LLAMA_ARG_PORT to vary, but its published target stays 10732 and bundled OpenCode baseURL stays 10732. Router YAML also contains 10732. First-run OpenCode configuration now derives MCP enablement from the optional-service flags, preserves existing files and symlinks, and seeds correctly into fresh Docker-managed volumes. Make run still hard-codes service enablement and duplicates Compose's configuration surface.
+Reviewed 2026-11-01 against commit c70dba762ef17a93c9da080a4341a6e29a864916 with local changes. Compose allows LLAMA_ARG_PORT to vary, but its published target stays 10732 and bundled OpenCode baseURL stays 10732. Router YAML also contains 10732. First-run OpenCode configuration now derives MCP enablement from the optional-service flags, preserves existing files and symlinks, and seeds correctly into fresh Docker-managed volumes. The shared environment grammar is now validated without evaluation and provides the accepted-key contract needed by PRT-01. Make run still hard-codes service enablement and duplicates Compose's configuration surface.
 
 ## Boundaries and decisions
 
@@ -37,9 +37,9 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 ## PRT-01 — Clarify and enforce the internal-port contract
 
-- Status: planned
+- Status: ready
 - Budget: 5 active hours maximum
-- Prerequisites: ENV-01
+- Prerequisites: none; the validated shared environment contract is recorded in `docs/environment.md`
 - Exact write set: `compose.yaml`, `scripts/check.sh`, `config/llama-swap/config.yaml`, `docs/environment.md`, `tests/port-contract.sh`
 - Primary integration lock: environment-contract
 - Outcome: Keep a single supported internal port while preserving configurable host publishing.

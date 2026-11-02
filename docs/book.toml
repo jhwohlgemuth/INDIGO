@@ -1,0 +1,27 @@
+[book]
+authors = ["Jason Wohlgemuth"]
+language = "en"
+src = "src"
+title = "INDIGO documentation"
+text-direction = "ltr"
+
+[build]
+build-dir = "book"
+create-missing = false
+
+[output.html]
+default-theme = "light"
+preferred-dark-theme = "navy"
+additional-css = ["indigo-docs.css"]
+
+[output.html.fold]
+enable = true
+level = 0
+
+[output.html.playground]
+editable = false
+copyable = true
+line-numbers = false
+runnable = false
+
+[preprocessor.pikchr]

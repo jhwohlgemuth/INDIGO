@@ -1,0 +1,49 @@
+stages:
+  - test
+  - deploy
+
+variables:
+  CARGO_HOME: "$CI_PROJECT_DIR/.cargo"
+
+.mdbook:
+  image: >-
+    rust:1.90-bookworm@sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f
+  cache:
+    key: mdbook-0.5.2-pikchr-0.2.0
+    paths:
+      - .cargo/bin/
+      - .cargo/registry/cache/
+      - .cargo/registry/index/
+  before_script:
+    - >-
+      command -v mdbook >/dev/null &&
+      command -v mdbook-pikchr >/dev/null ||
+      cargo install --locked mdbook@0.5.2 mdbook-pikchr@0.2.0
+  script:
+    - make book
+
+test-docs:
+  extends: .mdbook
+  stage: test
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - .gitlab-ci.yml
+        - ARCHITECTURE.md
+        - Makefile
+        - README.md
+        - docs/**/*
+
+deploy-pages:
+  extends: .mdbook
+  stage: deploy
+  pages:
+    publish: docs/book
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      changes:
+        - .gitlab-ci.yml
+        - ARCHITECTURE.md
+        - Makefile
+        - README.md
+        - docs/**/*

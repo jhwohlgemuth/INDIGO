@@ -4,32 +4,27 @@ Indigo is an agentic developer environment rather than an agent framework. **Ind
 Its default path keeps model execution local while exposing standard APIs to
 agents both inside and outside the Compose network.
 
-```mermaid
-graph LR
-    Models["Persistent models"] --> Router["llama-swap :10732"]
-    Router --> OpenCode["OpenCode primary client"]
-    Router --> Codex["Codex optional client"]
-    MCP["HTTP MCP services"] --> OpenCode
-    MCP --> Codex
-    subgraph Indigo["Indigo container / s6"]
-        Router
-        OpenCode
-        Codex
-        Viking["OpenViking service :1933"]
-        Pinokio["Pinokio service :42000"]
-        Proxy["Managed Caddy proxy :8080"]
-        Filesystem["Filesystem MCP :11002"]
-        RustAnalyzer["Rust Analyzer MCP :11003"]
-    end
-    Router --> Viking
-    Pinokio --> Proxy
-    Proxy --> Apps["Dynamic Pinokio web apps"]
-    subgraph Host["Host configuration"]
-        ShellSetup["my-shell-setup"] --> HostClients["Host OpenCode + Codex"]
-        AcornSync["acorn sync"] --> HostClients
-    end
-    HostClients --> Router
-    MCP --> HostClients
+```pikchr
+scale = 0.75
+Models: box "Persistent" "models" wid 1.0in ht 0.52in rad 0.08in fill 0xF3F0FF thickness 0
+arrow right 0.38in thick color 0x5B4BC4
+Router: box "llama-swap" ":10732" wid 1.0in ht 0.52in rad 0.08in fill 0xEDE9FE thickness 0
+arrow right 0.38in thick color 0x5B4BC4
+Clients: box "OpenCode +" "Codex" wid 1.0in ht 0.52in rad 0.08in fill 0xE0E7FF thickness 0
+arrow right 0.38in thick color 0x5B4BC4
+Response: circle radius 0.1in fill white thickness 0
+circle radius 0.05in fill 0x5B4BC4 thickness 0 at Response
+HostConfig: box "shell setup +" "ACORN sync" wid 1.1in ht 0.52in rad 0.08in fill 0xF3E8FF thickness 0 at Clients+(0,0.85in)
+arrow from HostConfig.s to Clients.n thick color 0x5B4BC4
+MCP: box "Filesystem + Rust" "Analyzer MCP" wid 1.25in ht 0.52in rad 0.08in fill 0xF5F3FF thickness 0 at Clients+(0,-0.85in)
+arrow from MCP.n to Clients.s thick color 0x5B4BC4
+Viking: box "OpenViking" ":1933" wid 1.0in ht 0.52in rad 0.08in fill 0xEDE9FE thickness 0 at Router+(0,-0.85in)
+arrow from Router.s to Viking.n thick color 0x5B4BC4
+Pinokio: box "Pinokio" ":42000" wid 1.0in ht 0.52in rad 0.08in fill 0xF3F0FF thickness 0 at Models+(0,-1.7in)
+Proxy: box "Caddy proxy" ":8080" wid 1.0in ht 0.52in rad 0.08in fill 0xEDE9FE thickness 0 at Router+(0,-1.7in)
+Apps: box "Dynamic" "web apps" wid 1.0in ht 0.52in rad 0.08in fill 0xE0E7FF thickness 0 at Clients+(0,-1.7in)
+arrow from Pinokio.e to Proxy.w thick color 0x5B4BC4
+arrow from Proxy.e to Apps.w thick color 0x5B4BC4
 ```
 
 ## Operating modes
@@ -142,6 +137,21 @@ example publishes inference and the base notebook ports. Optional Indigo
 services stay off unless the user opts in to both the service and its host port.
 
 ## Instance boundaries
+
+```pikchr
+scale = 0.8
+Base: box "Base .env" wid 0.95in ht 0.5in rad 0.08in fill 0xF3F0FF thickness 0
+arrow right 0.42in thick color 0x5B4BC4
+New: box "scripts/new.sh" wid 1.15in ht 0.5in rad 0.08in fill 0xEDE9FE thickness 0
+One: box ".env.one" wid 0.95in ht 0.5in rad 0.08in fill 0xE0E7FF thickness 0 at New+(1.7in,0.55in)
+Two: box ".env.two" wid 0.95in ht 0.5in rad 0.08in fill 0xF3E8FF thickness 0 at New+(1.7in,-0.55in)
+arrow from New.e right 0.3in then up until even with One then to One.w thick color 0x5B4BC4
+arrow from New.e right 0.3in then down until even with Two then to Two.w thick color 0x5B4BC4
+OneState: box "Ports + state" wid 1.05in ht 0.5in rad 0.08in fill 0xE0E7FF thickness 0 at One+(1.65in,0)
+TwoState: box "Ports + state" wid 1.05in ht 0.5in rad 0.08in fill 0xF3E8FF thickness 0 at Two+(1.65in,0)
+arrow from One.e to OneState.w thick color 0x5B4BC4
+arrow from Two.e to TwoState.w thick color 0x5B4BC4
+```
 
 `.env` is the single source of truth for the image tag, host publishing, and
 instance identity. `compose.yaml` interpolates those values with `${VAR:?}`

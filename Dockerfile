@@ -3,11 +3,17 @@ ARG NOTEBOOK_DIGEST=sha256:c3256bd1d46ffd71f6c7b95cc0da7cca1c2ddc417070f3a7622bd
 ARG CODE_SERVER_VERSION=4.143.1
 ARG CODE_SERVER_DIGEST=sha256:377b66bec5645510ed52549bb00e648c273edc604d230a3f90fd2b2433afcb97
 ARG PINOKIO_NODE_VERSION=20
+ARG PINOKIO_NODE_DIGEST=sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
 ARG PINOKIO_COMMIT=2c39f9fe9c40c985e03b13ab8a48ead908139b39
+ARG CADDY_VERSION=2.9.1
+ARG CADDY_DIGEST=sha256:748016f285ed8c43a9ce6e3aed6d92d3009d90ca41157950880f40beaf3ff62b
 ARG MCP_NODE_VERSION=24
+ARG MCP_NODE_DIGEST=sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c
+ARG RUST_VERSION=1.90
+ARG RUST_DIGEST=sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f
 ARG LLAMA_CPP_COMMIT=8642541b255bfb5dc39cd351a178be09013a55d6
 
-FROM node:${PINOKIO_NODE_VERSION} AS pinokio-source
+FROM node:${PINOKIO_NODE_VERSION}@${PINOKIO_NODE_DIGEST} AS pinokio-source
 ARG PINOKIO_COMMIT
 ADD https://github.com/pinokiocomputer/pinokiod/archive/${PINOKIO_COMMIT}.tar.gz /tmp/pinokio.tar.gz
 RUN mkdir /src \
@@ -16,7 +22,7 @@ RUN mkdir /src \
     && sed -i '/  async installed() {/a\    if (process.env.PINOKIO_SYSTEM_CADDY === "1") return true' \
         /src/kernel/bin/caddy.js
 
-FROM node:${PINOKIO_NODE_VERSION} AS pinokio-build
+FROM node:${PINOKIO_NODE_VERSION}@${PINOKIO_NODE_DIGEST} AS pinokio-build
 WORKDIR /app
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends python3 make g++ \
@@ -24,11 +30,11 @@ RUN apt-get update \
 COPY --from=pinokio-source /src/package.json /src/package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-FROM caddy:2.9.1 AS pinokio-caddy
+FROM caddy:${CADDY_VERSION}@${CADDY_DIGEST} AS pinokio-caddy
 
 FROM ghcr.io/coder/code-server:${CODE_SERVER_VERSION}@${CODE_SERVER_DIGEST} AS code-server
 
-FROM node:${MCP_NODE_VERSION}-bookworm-slim AS mcp-node
+FROM node:${MCP_NODE_VERSION}-bookworm-slim@${MCP_NODE_DIGEST} AS mcp-node
 ARG SUPERGATEWAY_VERSION=3.4.3
 ARG FILESYSTEM_MCP_VERSION=2026.7.10
 RUN npm install --global --omit=dev \
@@ -36,7 +42,7 @@ RUN npm install --global --omit=dev \
         "@modelcontextprotocol/server-filesystem@${FILESYSTEM_MCP_VERSION}" \
     && npm cache clean --force
 
-FROM rust:1.90-bookworm AS rust-toolchain
+FROM rust:${RUST_VERSION}-bookworm@${RUST_DIGEST} AS rust-toolchain
 ARG RUST_ANALYZER_MCP_VERSION=0.4.0
 RUN rustup component add rust-analyzer rust-src \
     && cargo install --locked --version "${RUST_ANALYZER_MCP_VERSION}" rust-analyzer-mcp

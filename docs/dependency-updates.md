@@ -1,5 +1,18 @@
 # Release input updates
 
+```pikchr
+scale = 0.76
+Release: box "Reviewed" "release" wid 1.0in ht 0.52in rad 0.08in fill 0xF3F0FF thickness 0
+arrow right 0.35in thick color 0x5B4BC4
+Resolve: box "Resolve tag +" "digest" wid 1.05in ht 0.52in rad 0.08in fill 0xEDE9FE thickness 0
+arrow right 0.35in thick color 0x5B4BC4
+Pair: box "Update version" "+ digest" wid 1.1in ht 0.52in rad 0.08in fill 0xE0E7FF thickness 0
+arrow right 0.35in thick color 0x5B4BC4
+Checks: box "Checks +" "image smoke" wid 1.05in ht 0.52in rad 0.08in fill 0xF3E8FF thickness 0
+arrow right 0.35in thick color 0x5B4BC4
+Evidence: box "Record platform" "evidence" wid 1.15in ht 0.52in rad 0.08in fill 0xF5F3FF thickness 0
+```
+
 The Container workflow uses `actions/checkout` v4.4.0 at commit
 `11d5960a326750d5838078e36cf38b85af677262`. The tag was resolved with
 `git ls-remote https://github.com/actions/checkout.git refs/tags/v4.4.0`.
@@ -46,7 +59,31 @@ this input, inspect the index for both Linux amd64 and arm64 manifests, update
 `tests/build-inputs.sh`, and verify `code-server --version`, ELF machine IDs,
 and `scripts/runtime-smoke.sh` on ARM64.
 
-The inference source, other OCI base images, and Homebrew versions have
-separate remaining phases in the planning portfolio. This record does not claim
-bit-for-bit reproducible images while those inputs and transitive packages can
-still change.
+All direct OCI base references are tag-plus-digest pinned. The remaining Docker
+Hub inputs were resolved on 2026-11-01 with
+`docker buildx imagetools inspect` against the official-library names:
+
+| Build stage | Reviewed reference | Multi-platform index | Linux amd64 manifest | Linux arm64 manifest |
+| --- | --- | --- | --- | --- |
+| Pinokio source and build | `node:20` | `sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5` | `sha256:cacf10e99285cbbc891452e31249c1b5ec3ba225f40028fae946b75aeaf1b66a` | `sha256:f5b23dfa20dc91f65416e7d8dbee9f7a728a5677a53f711a1047f0eaac77d8f0` |
+| Pinokio Caddy | `caddy:2.9.1` | `sha256:748016f285ed8c43a9ce6e3aed6d92d3009d90ca41157950880f40beaf3ff62b` | `sha256:cf1bd22f2415bc99b785ece1df2c49d32985ac4ac42d84df335be17350593693` | `sha256:dc5640f3339bba2a36cb20392dd32d432bd88d14275cdf1f3637f3107caf7ecc` |
+| MCP Node runtime | `node:24-bookworm-slim` | `sha256:c86ecead9e55a5210ac1727de38a4ca840bf03dcaf34dc9749addbf383b1920c` | `sha256:a43f7fc3e52e87d12a905f46eea0275def84ca8f2981a5b53fed44d7fb398ee0` | `sha256:e80dee4ed3709cf1f8004e34ecfb90df71b7eac8ba0d7d6222ba238a823d1eea` |
+| Rust toolchain | `rust:1.90-bookworm` | `sha256:3914072ca0c3b8aad871db9169a651ccfce30cf58303e5d6f2db16d1d8a7e58f` | `sha256:3f6e6f8d8725a65a2db964bb828850f888d430c68784d661f753144e5d787207` | `sha256:4c632e493dfa97f0fe014c3910d1690c149bba85ed8678d47d3563ec6f258ead` |
+
+When updating an OCI base, inspect the candidate tag's index in the registry,
+confirm that it still contains the intended Linux amd64 and arm64 manifests,
+and review the upstream release and base-distribution change. Update the
+version and digest arguments together; never refresh a digest without recording
+which tag and platforms were reviewed. Run `make check`, `make lint`, a CPU
+image build, and `make image-smoke` on the resulting image. Exercise an ARM64
+build whenever the changed index or copied artifacts are architecture-sensitive.
+
+These pins make the selected OCI manifests immutable, not the whole build
+bit-for-bit reproducible. `apt-get` still resolves the current package indexes
+without a Debian snapshot or package-version lock. The OpenViking pip command
+pins only its top-level version, so its transitive requirements can change.
+Pinokio's `npm ci` uses the source commit's lockfile, but the global MCP npm
+installs pin only top-level versions and resolve transitive packages at build
+time. Homebrew bottles and formula resolution remain a separate guarded update
+phase. Review these moving inputs in every dependency update even when the OCI
+base digests are unchanged.

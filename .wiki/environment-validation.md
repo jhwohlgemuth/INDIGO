@@ -15,11 +15,11 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Reviewed 2026-10-22 against commit ea5c9f7cb7734f1bee302e22bfd8035a8e851fc4. `scripts/check.sh` accepts any nonempty value for most required fields. Numeric ports are evaluated in Bash arithmetic, where leading zeros can imply octal. `scripts/new.sh` defaults to +1, which can overlap adjacent ports of the base instance; it does not compare derived ports against base_ports. lsof availability gates host checks, occupied ports only warn, and output is written before final validation.
+Rechecked 2026-11-01. `scripts/check.sh` now parses the shared environment grammar in one non-evaluating pass, reports duplicate and malformed assignments, validates typed OCI/host/resource fields, accepts LF and CRLF, and canonicalizes ports explicitly in base 10 so `08` is accepted while `08`/`8` collisions fail. `tests/env-validation.sh` covers missing fields, quotes, whitespace, shell syntax, invalid image/host values, overflow and accepted Compose fixtures; `docs/environment.md` records the contract. `scripts/new.sh` still defaults to +1, can overlap adjacent base-instance ports, treats occupied host ports as warnings, and writes output before final validation.
 
 ## Boundaries and decisions
 
-Define a strict common .env subset for Make, Compose and scripts. Reject unsupported syntax rather than sourcing untrusted files. Make base-instance collisions errors and live-host checks explicit best-effort diagnostics. This is remaining work, not an implementation claim. Docker runtime behavior and performance were not verified during this review because daemon access was denied.
+Keep the strict common `.env` subset non-evaluating across Make, Compose and scripts. The remaining phase must make generated output transactional, reject base-instance collisions, and keep live-host checks as explicit best-effort diagnostics.
 
 ## Dependencies
 
@@ -35,22 +35,11 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 
 # Execution phases
 
-## ENV-01 — Validate the shared environment grammar
+## ENV-02 — Generate instance files transactionally
 
 - Status: ready
 - Budget: 5 active hours maximum
-- Prerequisites: none
-- Exact write set: `scripts/check.sh`, `tests/env-validation.sh`, `docs/environment.md`
-- Primary integration lock: environment-contract
-- Outcome: Return consistent actionable errors and parse decimal ports deliberately.
-- Focused validation: Exercise duplicate keys, CRLF, quotes, whitespace, port 08, overflow, invalid image/host values and missing required fields; compare accepted fixtures through Compose.
-- Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
-
-## ENV-02 — Generate instance files transactionally
-
-- Status: planned
-- Budget: 5 active hours maximum
-- Prerequisites: ENV-01
+- Prerequisites: none; the shared environment grammar is enforced by `scripts/check.sh`
 - Exact write set: `scripts/new.sh`, `tests/new-instance.sh`
 - Primary integration lock: environment-contract
 - Outcome: Validate a temporary file before atomic replacement and detect base-instance collisions.

@@ -5,3 +5,5 @@
 
 .indigo/*/*
 !.indigo/*/.gitkeep
+
+/docs/book

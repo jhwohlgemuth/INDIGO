@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 #
-# Validate that an Indigo environment file carries every value required by
-# compose.yaml and the Makefile. Those values have no fallbacks, so a missing or
-# malformed key must fail loudly here instead of silently rendering an empty
-# string into an image reference or a published port.
+# Validate the deliberately small environment-file grammar shared by Make,
+# Compose, and scripts/new.sh. Never source or evaluate the file: an invalid
+# assignment must fail here instead of acquiring different meanings in each
+# consumer.
 #
 # Usage: scripts/check.sh [env-file]
 set -euo pipefail
@@ -41,73 +41,138 @@ if [[ ! -f "${env_file}" ]]; then
 fi
 
 status=0
+keys=()
+values=()
+key_lines=()
+line_number=0
+
+report() {
+    echo "error: $*" >&2
+    status=1
+}
+
+index_of() {
+    local requested="$1"
+    local index
+    for index in "${!keys[@]}"; do
+        if [[ "${keys[${index}]}" == "${requested}" ]]; then
+            printf '%s\n' "${index}"
+            return 0
+        fi
+    done
+    printf '%s\n' -1
+}
 
 value_of() {
-    awk -F= -v key="$1" '$1 == key { print substr($0, index($0, "=") + 1); exit }' "${env_file}"
+    local index
+    index="$(index_of "$1")"
+    if [[ "${index}" -ge 0 ]]; then
+        printf '%s\n' "${values[${index}]}"
+    fi
 }
 
-count_of() {
-    awk -F= -v key="$1" '$1 == key { count++ } END { print count + 0 }' "${env_file}"
-}
+while IFS= read -r raw_line || [[ -n "${raw_line}" ]]; do
+    line_number=$((line_number + 1))
+    line="${raw_line%$'\r'}"
+
+    if [[ -z "${line}" || "${line}" == \#* ]]; then
+        continue
+    fi
+
+    if [[ ! "${line}" =~ ^([A-Za-z_][A-Za-z0-9_]*)=(.*)$ ]]; then
+        report "line ${line_number} in ${env_file} must be KEY=VALUE with no leading whitespace or export prefix"
+        continue
+    fi
+
+    key="${BASH_REMATCH[1]}"
+    value="${BASH_REMATCH[2]}"
+    if [[ ! "${value}" =~ ^[A-Za-z0-9._/:@,+-]*$ ]]; then
+        report "${key} on line ${line_number} in ${env_file} contains unsupported quoting, whitespace, or shell syntax"
+        continue
+    fi
+
+    previous="$(index_of "${key}")"
+    if [[ "${previous}" -ge 0 ]]; then
+        report "${key} is defined more than once in ${env_file} (lines ${key_lines[${previous}]} and ${line_number})"
+        continue
+    fi
+
+    keys+=("${key}")
+    values+=("${value}")
+    key_lines+=("${line_number}")
+done < "${env_file}"
 
 for key in "${required[@]}"; do
     value="$(value_of "${key}")"
     if [[ -z "${value}" ]]; then
-        echo "error: ${key} is missing or empty in ${env_file}" >&2
-        status=1
-        continue
-    fi
-    occurrences="$(count_of "${key}")"
-    if [[ "${occurrences}" -gt 1 ]]; then
-        echo "error: ${key} is defined ${occurrences} times in ${env_file}" >&2
-        status=1
+        report "${key} is missing or empty in ${env_file}"
     fi
 done
 
-notebook_digest="$(value_of NOTEBOOK_DIGEST)"
-if [[ ! "${notebook_digest}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
-    echo "error: NOTEBOOK_DIGEST must be a sha256 digest in ${env_file}" >&2
-    status=1
-fi
+validate_pattern() {
+    local key="$1"
+    local pattern="$2"
+    local expectation="$3"
+    local value
+    value="$(value_of "${key}")"
+    [[ -n "${value}" ]] || return 0
+    if [[ ! "${value}" =~ ${pattern} ]]; then
+        report "${key} must be ${expectation} in ${env_file}: ${value}"
+    fi
+}
 
-mlx_port_occurrences="$(count_of INDIGO_MLX_PORT)"
-if [[ "${mlx_port_occurrences}" -gt 1 ]]; then
-    echo "error: INDIGO_MLX_PORT is defined more than once in ${env_file}" >&2
-    status=1
-fi
+image_component='^[a-z0-9]+([._-][a-z0-9]+)*$'
+image_namespace='^[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*$'
+tag_value='^[A-Za-z0-9_][A-Za-z0-9._-]*$'
+host_value='^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$'
 
-declare_list=()
+validate_pattern VERSION "${tag_value}" "an OCI tag-compatible value"
+validate_pattern NOTEBOOK_VERSION "${tag_value}" "an OCI tag-compatible value"
+validate_pattern REGISTRY '^([A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?)(:[0-9]+)?$' "a registry hostname with an optional decimal port"
+validate_pattern REGISTRY_PROJECT "${image_namespace}" "a lowercase OCI namespace"
+validate_pattern IMAGE "${image_component}" "a lowercase OCI image name"
+validate_pattern NOTEBOOK_DIGEST '^sha256:[0-9a-f]{64}$' "a lowercase sha256 digest"
+validate_pattern INDIGO_HOSTNAME "${host_value}" "a hostname without a scheme or port"
+validate_pattern PINOKIO_DOMAIN "${host_value}" "a hostname without a scheme or port"
+validate_pattern INDIGO_PUBLISH_HOST "${host_value}" "a hostname or IP address without a scheme or port"
+validate_pattern INDIGO_SHM_SIZE '^[1-9][0-9]*([kKmMgGtT][bB]?)$' "a positive size such as 2gb"
+validate_pattern INDIGO_STOP_GRACE_PERIOD '^[1-9][0-9]*(ns|us|ms|s|m|h)$' "a positive duration such as 1m"
+
+port_keys=()
 for key in "${required[@]}"; do
     if [[ "${key}" == *_PUBLISHED_PORT ]]; then
-        declare_list+=("${key}")
+        port_keys+=("${key}")
     fi
 done
-declare_list+=(INDIGO_MLX_PORT)
+port_keys+=(INDIGO_MLX_PORT)
 
-ports=()
-for key in "${declare_list[@]}"; do
+port_values=()
+port_names=()
+for key in "${port_keys[@]}"; do
     value="$(value_of "${key}")"
     [[ -n "${value}" ]] || continue
     if [[ ! "${value}" =~ ^[0-9]+$ ]]; then
-        echo "error: ${key} is not a number in ${env_file}: ${value}" >&2
-        status=1
+        report "${key} must be a decimal port in ${env_file}: ${value}"
         continue
     fi
-    if ((value < 1 || value > 65535)); then
-        echo "error: ${key} is out of range in ${env_file}: ${value}" >&2
-        status=1
-        continue
-    fi
-    ports+=("${value}")
-done
 
-for index in "${!ports[@]}"; do
-    for other in "${!ports[@]}"; do
-        if [[ "${other}" -gt "${index}" && "${ports[${index}]}" -eq "${ports[${other}]}" ]]; then
-            echo "error: port ${ports[${index}]} is published by more than one service in ${env_file}" >&2
-            status=1
+    decimal="${value}"
+    while [[ "${#decimal}" -gt 1 && "${decimal:0:1}" == 0 ]]; do
+        decimal="${decimal:1}"
+    done
+    if [[ "${#decimal}" -gt 5 ]] || ((10#${decimal} < 1 || 10#${decimal} > 65535)); then
+        report "${key} is out of range in ${env_file}: ${value}"
+        continue
+    fi
+    decimal=$((10#${decimal}))
+
+    for index in "${!port_values[@]}"; do
+        if [[ "${port_values[${index}]}" -eq "${decimal}" ]]; then
+            report "port ${decimal} is assigned to both ${port_names[${index}]} and ${key} in ${env_file}"
         fi
     done
+    port_values+=("${decimal}")
+    port_names+=("${key}")
 done
 
 if [[ ${status} -ne 0 ]]; then

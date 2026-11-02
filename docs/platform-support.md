@@ -7,6 +7,20 @@ The Apple Silicon runs below verify the complete native MLX, container-router,
 and OpenCode path. A later image repair also restored full ARM64 container
 health, and a full stop/restart preserved both router and client configuration.
 
+```pikchr
+scale = 0.72
+LinuxClient: box "Linux / Windows" "client" wid 1.15in ht 0.52in rad 0.08in fill 0xF3F0FF thickness 0
+LinuxRouter: box "INDIGO router" ":10732" wid 1.1in ht 0.52in rad 0.08in fill 0xEDE9FE thickness 0 at LinuxClient+(1.75in,0)
+Llama: box "Container" "llama.cpp" wid 1.05in ht 0.52in rad 0.08in fill 0xE0E7FF thickness 0 at LinuxRouter+(1.75in,0)
+arrow from LinuxClient.e to LinuxRouter.w thick color 0x5B4BC4
+arrow from LinuxRouter.e to Llama.w thick color 0x5B4BC4
+MacClient: box "macOS" "client" wid 1.15in ht 0.52in rad 0.08in fill 0xF3F0FF thickness 0 at LinuxClient+(0,-0.9in)
+MacRouter: box "INDIGO router" ":10732" wid 1.1in ht 0.52in rad 0.08in fill 0xEDE9FE thickness 0 at LinuxRouter+(0,-0.9in)
+MLX: box "Native MLX" ":10733" wid 1.05in ht 0.52in rad 0.08in fill 0xF3E8FF thickness 0 at Llama+(0,-0.9in)
+arrow from MacClient.e to MacRouter.w thick color 0x5B4BC4
+arrow from MacRouter.e to MLX.w thick color 0x5B4BC4
+```
+
 ## Evidence matrix
 
 The table below separates the launch path each platform is *configured* to use from the runtime evidence actually *recorded* for it.

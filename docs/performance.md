@@ -6,6 +6,20 @@ image identity, and measurement method with every result. Do not compare runs
 from different hosts or input revisions as if they were controlled before/after
 results.
 
+```pikchr
+scale = 0.76
+Context: box "Host + revision +" "image identity" wid 1.3in ht 0.52in rad 0.08in fill 0xF3F0FF thickness 0
+Build: box "Cold / warm" "build" wid 1.05in ht 0.52in rad 0.08in fill 0xEDE9FE thickness 0 at Context+(1.8in,0.55in)
+Idle: box "Settled idle" "samples" wid 1.05in ht 0.52in rad 0.08in fill 0xE0E7FF thickness 0 at Context+(1.8in,-0.55in)
+arrow from Context.e right 0.25in then up until even with Build then to Build.w thick color 0x5B4BC4
+arrow from Context.e right 0.25in then down until even with Idle then to Idle.w thick color 0x5B4BC4
+Evidence: box "Raw evidence" wid 1.05in ht 0.52in rad 0.08in fill 0xF3E8FF thickness 0 at Context+(3.6in,0)
+arrow from Build.e right 0.25in then down until even with Evidence then to Evidence.w thick color 0x5B4BC4
+arrow from Idle.e right 0.25in then up until even with Evidence then to Evidence.w thick color 0x5B4BC4
+arrow right 0.4in from Evidence.e thick color 0x5B4BC4
+Compare: box "Controlled" "comparison" wid 1.05in ht 0.52in rad 0.08in fill 0xF5F3FF thickness 0
+```
+
 ## Reproduce a build measurement
 
 `scripts/benchmark.sh` writes disposable evidence below
