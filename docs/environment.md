@@ -67,20 +67,30 @@ Compose file. It also applies these type checks:
 - host fields contain a hostname or IP address, not a URL scheme or port;
 - shared-memory size and stop grace period use positive explicit units.
 
-Additional safe assignments are allowed for documented Compose and image
-overrides. They still follow the same grammar and uniqueness rules.
+Only required fields and documented optional overrides are accepted. Unknown
+keys fail validation instead of being silently ignored.
 
 ## Decimal port rules
 
-Published ports and optional `INDIGO_MLX_PORT` must contain only decimal digits
-and represent values from 1 through 65535. Leading zeros are accepted and are
-explicitly interpreted in base 10, so `08` means port 8 rather than an octal
-number. Canonically equal spellings collide: `08` and `8` cannot be assigned to
-two services.
+Published ports and optional `INDIGO_MLX_PORT` must use canonical decimal
+notation from 1 through 65535. Leading zeros are rejected.
 
 Validation detects duplicate ports inside the file. It does not reserve a host
 port or guarantee that another process is not listening; Docker remains the
 authority when the stack binds its ports.
+
+## Inference port contract
+
+INDIGO keeps its container-side inference endpoint fixed at port `10732`. The
+Compose service, `llama-swap` listener, health checks, and generated client
+configuration all use that internal port. Change `INFERENCE_PUBLISHED_PORT` to
+publish it on a different host port; for example,
+`INFERENCE_PUBLISHED_PORT=20732` exposes the API at
+`http://127.0.0.1:20732/v1` while the container target stays `10732`.
+
+There is no internal-port setting. Compose, standalone launch commands, the
+router service, and health checks all use `10732`; use
+`INFERENCE_PUBLISHED_PORT` only to change the host-facing port.
 
 ## Error behavior
 

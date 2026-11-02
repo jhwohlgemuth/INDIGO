@@ -138,7 +138,7 @@ warning or choose another offset before startup; Docker reports any remaining
 bind collision when the instance starts.
 
 ```shell
-scripts/new.sh three 1000
+scripts/new.sh three 2000
 make down ENV_FILE=.env.three
 ```
 

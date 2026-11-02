@@ -8,7 +8,7 @@ if [[ ! "${INDIGO_ENABLE_INFERENCE:-1}" =~ ^(1|true|yes|on)$ ]]; then
 fi
 
 host="${LLAMA_ARG_HOST:-0.0.0.0}"
-port="${LLAMA_ARG_PORT:-10732}"
+port=10732
 config_file="${INDIGO_LLAMA_SWAP_CONFIG_FILE:-${HOME}/.config/llama-swap/config.yaml}"
 
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"

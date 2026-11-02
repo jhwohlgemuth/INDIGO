@@ -2,6 +2,7 @@
 healthCheckTimeout: 500
 logToStdout: "none"
 proxy:
+  # Supported INDIGO clients and launchers share this fixed container endpoint.
   listen: "http://0.0.0.0:10732"
 macros:
   "batch_size": "${env.LLAMA_ARG_BATCH}"

@@ -59,6 +59,30 @@ this input, inspect the index for both Linux amd64 and arm64 manifests, update
 `tests/build-inputs.sh`, and verify `code-server --version`, ELF machine IDs,
 and `scripts/runtime-smoke.sh` on ARM64.
 
+The image expects Homebrew `hf` 2.4.0 and `llama-swap` 269. These versions
+were reviewed on 2026-11-02 from Homebrew/core commit
+`89ef485902edf3b041b7e25a067ea7a6cae2c9fd` and the
+`mostlygeek/homebrew-llama-swap` tap commit
+`4de25c961cd19f588124fa3394723de8730e021c`. The build installs the current
+formulae, reads their installed versions with `brew list --versions`, and
+fails if either differs from the `HF_VERSION` or `LLAMA_SWAP_VERSION` build
+argument. This detects formula drift; it does not pin Homebrew or its
+transitive dependencies.
+
+To update either tool, inspect the formula and upstream release, record the
+reviewed tap commit, update the corresponding Dockerfile argument, and build
+the image. Inspect both installed versions with
+`brew list --versions hf llama-swap`, run `make image-smoke`, and repeat the
+build once with a deliberately incorrect expected version to confirm the
+guard fails before accepting the update.
+
+On 2026-11-02, the final ARM64 CPU validation built image
+`sha256:00c0a0e2db7452adb765e2961e2a8227d8d288265ce552310ef3f1739ef3ea5e`;
+version inspection reported `hf 2.4.0` and `llama-swap 269`, and image smoke
+passed. Rebuilding with only `HF_VERSION=0.0.0` reused the llama.cpp compile
+layer and failed at the version guard with the installed `hf 2.4.0`. This
+confirms that expectation changes do not invalidate inference compilation.
+
 All direct OCI base references are tag-plus-digest pinned. The remaining Docker
 Hub inputs were resolved on 2026-11-01 with
 `docker buildx imagetools inspect` against the official-library names:

@@ -63,8 +63,7 @@ expect_compose "${crlf}"
 
 decimal_port="${fixture}/decimal-port.env"
 replace_value "${base}" "${decimal_port}" INFERENCE_PUBLISHED_PORT 08
-expect_pass "${decimal_port}"
-expect_compose "${decimal_port}"
+expect_fail "${decimal_port}" "INFERENCE_PUBLISHED_PORT must be a canonical decimal port with no leading zeros"
 
 optional="${fixture}/optional.env"
 cp "${base}" "${optional}"
@@ -123,20 +122,19 @@ expect_fail "${invalid_host}" "INDIGO_PUBLISH_HOST must be a hostname or IP addr
 
 not_decimal="${fixture}/not-decimal.env"
 replace_value "${base}" "${not_decimal}" INFERENCE_PUBLISHED_PORT '12x'
-expect_fail "${not_decimal}" "INFERENCE_PUBLISHED_PORT must be a decimal port"
+expect_fail "${not_decimal}" "INFERENCE_PUBLISHED_PORT must be a canonical decimal port"
 
 zero_port="${fixture}/zero-port.env"
 replace_value "${base}" "${zero_port}" INFERENCE_PUBLISHED_PORT 000
-expect_fail "${zero_port}" "INFERENCE_PUBLISHED_PORT is out of range"
+expect_fail "${zero_port}" "INFERENCE_PUBLISHED_PORT must be a canonical decimal port"
 
 overflow="${fixture}/overflow.env"
 replace_value "${base}" "${overflow}" INFERENCE_PUBLISHED_PORT 999999999999999999999
 expect_fail "${overflow}" "INFERENCE_PUBLISHED_PORT is out of range"
 
-canonical_collision_a="${fixture}/canonical-collision-a.env"
-canonical_collision="${fixture}/canonical-collision.env"
-replace_value "${base}" "${canonical_collision_a}" INFERENCE_PUBLISHED_PORT 08
-replace_value "${canonical_collision_a}" "${canonical_collision}" CODE_SERVER_PUBLISHED_PORT 8
-expect_fail "${canonical_collision}" "port 8 is assigned to both INFERENCE_PUBLISHED_PORT and CODE_SERVER_PUBLISHED_PORT"
+unsupported="${fixture}/unsupported.env"
+cp "${base}" "${unsupported}"
+printf '%s\n' 'INDIGO_UNKNOWN_SETTING=value' >> "${unsupported}"
+expect_fail "${unsupported}" "unsupported key INDIGO_UNKNOWN_SETTING"
 
 echo 'environment validation contract passed'

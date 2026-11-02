@@ -65,8 +65,9 @@ ARG USER_NAME=nonroot
 ARG HOME="/home/${USER_NAME}"
 ARG MODEL_DIRECTORY="${HOME}/.models"
 ARG CONTEXT_SIZE=0
-ARG PORT=10732
 ARG OPENVIKING_VERSION=0.4.17
+ARG HF_VERSION=2.4.0
+ARG LLAMA_SWAP_VERSION=269
 ARG INDIGO_LLAMA_BACKEND=cuda
 ARG INDIGO_LLAMA_BUILD_JOBS=2
 #
@@ -84,7 +85,6 @@ ENV LD_LIBRARY_PATH="/usr/local/lib:${CUDA_HOME}/lib64"
 ENV LLAMA_ARG_CTX_SIZE="${CONTEXT_SIZE}"
 ENV LLAMA_ARG_HOST=0.0.0.0
 ENV LLAMA_ARG_N_PARALLEL=2
-ENV LLAMA_ARG_PORT="${PORT}"
 ENV MODEL_DIRECTORY="${MODEL_DIRECTORY}"
 ENV OPENVIKING_CONFIG_FILE="${HOME}/.openviking/ov.conf"
 # openviking-server refuses dev auth mode on a non-loopback host, so the
@@ -165,7 +165,17 @@ USER "${USER_NAME}"
 RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
     && brew tap mostlygeek/llama-swap \
     && brew trust mostlygeek/llama-swap \
-    && brew install --force hf llama-swap
+    && brew install --force hf llama-swap \
+    && actual_hf_version="$(brew list --versions hf | awk '{ print $2 }')" \
+    && actual_llama_swap_version="$(brew list --versions llama-swap | awk '{ print $2 }')" \
+    && if [ "${actual_hf_version}" != "${HF_VERSION}" ]; then \
+        echo "hf version mismatch: expected ${HF_VERSION}, installed ${actual_hf_version}" >&2; \
+        exit 1; \
+    fi \
+    && if [ "${actual_llama_swap_version}" != "${LLAMA_SWAP_VERSION}" ]; then \
+        echo "llama-swap version mismatch: expected ${LLAMA_SWAP_VERSION}, installed ${actual_llama_swap_version}" >&2; \
+        exit 1; \
+    fi
 # Runtime-only tuning defaults stay after dependency installation so changing
 # them cannot invalidate inference compilation or package layers.
 ENV LLAMA_ARG_BATCH=2048

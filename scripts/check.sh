@@ -35,6 +35,31 @@ required=(
     MCP_RUST_ANALYZER_PUBLISHED_PORT
 )
 
+optional=(
+    COMPOSE_PROJECT_NAME
+    INDIGO_DEFAULT_MODEL
+    INDIGO_DEFAULT_MODEL_PATH
+    INDIGO_ENABLE_FILESYSTEM
+    INDIGO_ENABLE_INFERENCE
+    INDIGO_ENABLE_OPENVIKING
+    INDIGO_ENABLE_PINOKIO
+    INDIGO_ENABLE_RUST_ANALYZER
+    INDIGO_LLAMA_SWAP_CONFIG_PATH
+    INDIGO_MLX_PORT
+    INDIGO_MLX_SWAP_CONFIG_PATH
+    INDIGO_MODELS_PATH
+    INDIGO_SEED_AGENT_CONFIG
+    INDIGO_WORKSPACE_PATH
+    LLAMA_ARG_BATCH
+    LLAMA_ARG_CTX_SIZE
+    LLAMA_ARG_N_PARALLEL
+    LLAMA_ARG_UBATCH
+    OPENVIKING_CONF_CONTENT
+    OPENVIKING_WITH_BOT
+    RUST_ANALYZER_WORKSPACE
+)
+allowed=("${required[@]}" "${optional[@]}")
+
 if [[ ! -f "${env_file}" ]]; then
     echo "error: environment file not found: ${env_file}" >&2
     exit 1
@@ -86,6 +111,17 @@ while IFS= read -r raw_line || [[ -n "${raw_line}" ]]; do
 
     key="${BASH_REMATCH[1]}"
     value="${BASH_REMATCH[2]}"
+    allowed_key_found=0
+    for allowed_key in "${allowed[@]}"; do
+        if [[ "${allowed_key}" == "${key}" ]]; then
+            allowed_key_found=1
+            break
+        fi
+    done
+    if [[ ${allowed_key_found} -ne 1 ]]; then
+        report "unsupported key ${key} on line ${line_number} in ${env_file}"
+        continue
+    fi
     if [[ ! "${value}" =~ ^[A-Za-z0-9._/:@,+-]*$ ]]; then
         report "${key} on line ${line_number} in ${env_file} contains unsupported quoting, whitespace, or shell syntax"
         continue
@@ -151,20 +187,16 @@ port_names=()
 for key in "${port_keys[@]}"; do
     value="$(value_of "${key}")"
     [[ -n "${value}" ]] || continue
-    if [[ ! "${value}" =~ ^[0-9]+$ ]]; then
-        report "${key} must be a decimal port in ${env_file}: ${value}"
+    if [[ ! "${value}" =~ ^[1-9][0-9]*$ ]]; then
+        report "${key} must be a canonical decimal port with no leading zeros in ${env_file}: ${value}"
         continue
     fi
 
     decimal="${value}"
-    while [[ "${#decimal}" -gt 1 && "${decimal:0:1}" == 0 ]]; do
-        decimal="${decimal:1}"
-    done
-    if [[ "${#decimal}" -gt 5 ]] || ((10#${decimal} < 1 || 10#${decimal} > 65535)); then
+    if [[ "${#decimal}" -gt 5 ]] || ((decimal > 65535)); then
         report "${key} is out of range in ${env_file}: ${value}"
         continue
     fi
-    decimal=$((10#${decimal}))
 
     for index in "${!port_values[@]}"; do
         if [[ "${port_values[${index}]}" -eq "${decimal}" ]]; then

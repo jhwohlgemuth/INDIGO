@@ -27,7 +27,6 @@ services:
     environment:
       HEALTHCHECK_HOST: 127.0.0.1
       LLAMA_ARG_HOST: 0.0.0.0
-      LLAMA_ARG_PORT: "${LLAMA_ARG_PORT:-10732}"
       LLAMA_ARG_CTX_SIZE: "${LLAMA_ARG_CTX_SIZE:-0}"
       LLAMA_ARG_N_PARALLEL: "${LLAMA_ARG_N_PARALLEL:-2}"
       MODEL_DIRECTORY: /home/nonroot/.models

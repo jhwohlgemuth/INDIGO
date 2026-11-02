@@ -10,10 +10,6 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 
 - CFG-02: No feature prerequisite; provisioned image or Docker host for live MCP validation
 
-## [Pin and verify build inputs](reproducible-builds.md)
-
-- REP-04: No feature prerequisite; access to Homebrew sources and a provisioned image builder
-
 ## [Test service behavior before releasing images](runtime-ci.md)
 
 - TST-03: Approved small model fixture and available CPU validation host
@@ -34,14 +30,6 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 - UZU-03: UZU-02
 - UZU-04: UZU-03
 - UZU-05: UZU-04; qualified Mac/Docker host and approved checkpoint
-
-## [Make environment validation and instance creation dependable](environment-validation.md)
-
-- ENV-02: No feature prerequisite; shared environment grammar is enforced by `scripts/check.sh`
-
-## [Unify internal ports and generated client defaults](port-and-agent-contracts.md)
-
-- PRT-01: No feature prerequisite; validated environment contract is recorded in `docs/environment.md`
 
 ## [Reduce measured build and idle resource costs](build-and-runtime-efficiency.md)
 
