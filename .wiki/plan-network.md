@@ -10,10 +10,6 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 
 - TST-03: Approved small model fixture and available CPU validation host
 
-## [Document and rehearse backup recovery](persistent-state.md)
-
-- DAT-02: Accessible Docker host with disposable test volumes
-
 ## [Verify platform support, CPU inference, and Apple Silicon MLX](platform-contract.md)
 
 - PLT-02: Provisioned builder and approved CPU model fixture

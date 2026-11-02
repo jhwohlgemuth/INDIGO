@@ -115,6 +115,8 @@ volumes for the workspace, models, router configuration, OpenCode configuration
 and data, Codex, OpenViking, Pinokio, and Cargo. Router configuration uses
 `<container>-llama-swap-config` at `/home/nonroot/.config/llama-swap`, so it
 survives removing and recreating the container with the same instance name.
+See [Backup and restore standalone state](docs/backup-restore.md) for the
+credential-safe snapshot, verification, restore, and rollback procedure.
 
 ### Optional MCP defaults
 

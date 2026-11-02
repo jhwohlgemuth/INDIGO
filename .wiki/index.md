@@ -1,15 +1,14 @@
 # INDIGO planning portfolio
 
-Updated 2026-11-02. This portfolio contains 6 executable plans, including four high impact plans. Sorting is impact descending, then difficulty ascending; ties favor user-visible correctness and stronger evidence. Difficulty is relative remaining engineering complexity, not elapsed duration. Every phase is capped at five active hours; larger plans have multiple phases. The qualified Apple Silicon MLX path now passes streaming, tool calls, default OpenCode selection, and restart preservation; optional Uzu support waits on a Uzu-format checkpoint and upstream source/toolchain access.
+Updated 2026-11-02. This portfolio contains 5 executable plans, including three high impact plans. Sorting is impact descending, then difficulty ascending; ties favor user-visible correctness and stronger evidence. Difficulty is relative remaining engineering complexity, not elapsed duration. Every phase is capped at five active hours; larger plans have multiple phases. The qualified Apple Silicon MLX path now passes streaming, tool calls, default OpenCode selection, and restart preservation; optional Uzu support waits on a Uzu-format checkpoint and upstream source/toolchain access.
 
 | Rank | Remaining outcome | Impact | Difficulty |
 | --- | --- | --- | --- |
 | 1 | [Make OpenViking host access explicit and secure](openviking-access.md) | high | medium |
 | 2 | [Test service behavior before releasing images](runtime-ci.md) | high | medium |
-| 3 | [Document and rehearse backup recovery](persistent-state.md) | high | medium |
-| 4 | [Verify platform support, CPU inference, and Apple Silicon MLX](platform-contract.md) | high | high |
-| 5 | [Reduce measured build and idle resource costs](build-and-runtime-efficiency.md) | medium | high |
-| 6 | [Add optional Apple Silicon Uzu inference support](uzu-support.md) | medium | high |
+| 3 | [Verify platform support, CPU inference, and Apple Silicon MLX](platform-contract.md) | high | high |
+| 4 | [Reduce measured build and idle resource costs](build-and-runtime-efficiency.md) | medium | high |
+| 5 | [Add optional Apple Silicon Uzu inference support](uzu-support.md) | medium | high |
 
 ## Navigation
 
