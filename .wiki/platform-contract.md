@@ -6,7 +6,7 @@ difficulty: high
 impact: high
 package: [indigo]
 tags: [platform-contract, project-review]
-status: in-progress
+status: waiting-on-validation
 execution: phased
 phase_budget_hours: 5
 ---
@@ -15,11 +15,11 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Rechecked 2026-11-01. `make start GPU=0` and `make run GPU=0` omit `--gpus all`; `tests/run-platform.sh` checks both modes. `compose.cpu.yaml` only removes the GPU reservation. The default image still installs CUDA. On Apple Silicon, `mlx-lm==0.32.2` with the pinned Qwen3 4B checkpoint passed clean native and routed streaming, a structured tool call, and the tool-result continuation. [Platform evidence](../docs/platform-support.md) keeps the incompatible GPT-OSS result separate. INDIGO now overlays the inherited x86-64 code-server tree with the same 4.143.1 release from its pinned official multi-platform image. The rebuilt ARM64 image reports AArch64 for Node and runtime-selected native modules, and the complete container/MCP runtime smoke passes. PLT-03 now remains for OpenCode selection and restart/preservation acceptance.
+Rechecked 2026-11-01. `make start GPU=0` and `make run GPU=0` omit `--gpus all`; `tests/run-platform.sh` checks both modes. `compose.cpu.yaml` only removes the GPU reservation. The default image still installs CUDA. On Apple Silicon, `mlx-lm==0.32.2` with the pinned Qwen3 4B checkpoint passed clean native and routed streaming, a structured tool-result round trip, default OpenCode selection, and a full stop/restart with unchanged router and client configuration. [Platform evidence](../docs/platform-support.md) keeps the incompatible GPT-OSS result separate and records the accepted path. INDIGO overlays the inherited x86-64 code-server tree with the same 4.143.1 release from its pinned official multi-platform image; the rebuilt ARM64 image reports AArch64 for Node and runtime-selected native modules, and the complete container/MCP runtime smoke passes. Only the separately blocked CUDA-free CPU image evidence remains.
 
 ## Boundaries and decisions
 
-Use `GPU=0` as the standalone Make interface for omitting `--gpus all`; keep GPU mode as the default. Document tested host/architecture combinations separately from unverified emulation. Build an opt-in CPU image target without installing CUDA, while preserving the default GPU image target. Verify the existing native Apple Silicon MLX route before starting [optional Uzu support](uzu-support.md). Other native ARM64 and GPU backends remain separate decisions.
+Use `GPU=0` as the standalone Make interface for omitting `--gpus all`; keep GPU mode as the default. Document tested host/architecture combinations separately from unverified emulation. Build an opt-in CPU image target without installing CUDA, while preserving the default GPU image target. Use the recorded native Apple Silicon MLX acceptance as the baseline for [optional Uzu support](uzu-support.md). Other native ARM64 and GPU backends remain separate decisions.
 
 ## Dependencies
 
@@ -45,15 +45,3 @@ Use the focused checks in each phase. Keep fixtures disposable, preserve user st
 - Outcome: Split common runtime setup from GPU and CPU targets, keep the GPU target as the default, and make `compose.cpu-build.yaml` select the CPU target together with `compose.cpu.yaml`.
 - Focused validation: Build the CPU target and inspect dependencies for CUDA requirements; serve the approved small model on a CPU-only Docker host; compare artifact size.
 - Handoff: Record validation in durable tests/docs, remove this phase when satisfied, and reconcile indexes, dependencies and lanes. If incomplete, record exact changes, failure and next action; split unexpected repairs into a fresh bounded phase.
-
-## PLT-03 — Verify the native Apple Silicon MLX route
-
-- Status: ready
-- Budget: 5 active hours maximum
-- Prerequisites: Apple Silicon Mac with a working Docker daemon and the qualified Qwen3 MLX checkpoint
-- Exact write set: `scripts/mlx-acceptance.py`, `docs/platform-support.md`
-- Primary integration lock: mac-inference-validation
-- Outcome: Add a repeatable host acceptance command and record a successful native MLX to container router to client path, or retain this phase with the precise failure. This recorded success is the required gate for UZU-01.
-- Focused validation: Build and start `make up-mlx`; verify native `/health`, routed `/v1/models`, a streamed `/v1/chat/completions` reply, and a complete tool-call plus tool-result round trip through port 10732. Check stop and restart without replacing existing router/client config. Record macOS/SoC/RAM, image digest, `mlx-lm` version, model ID/hash, commands and results in `docs/platform-support.md`; use only test-owned state.
-- Handoff: Keep the MLX result in durable platform documentation, remove PLT-03 only after every acceptance check passes, and replace UZU-01's phase-ID prerequisite with the recorded evidence when updating the network and parallel guide. The qualified Qwen3 protocol and full ARM64 runtime checks pass; OpenCode selection and restart/preservation checks remain.
-

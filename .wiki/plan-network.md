@@ -27,11 +27,10 @@ Only phase prerequisites are blockers. Integration-lock conflicts require serial
 ## [Verify platform support, CPU inference, and Apple Silicon MLX](platform-contract.md)
 
 - PLT-02: Provisioned builder and approved CPU model fixture
-- PLT-03: Apple Silicon Mac, working Docker daemon and qualified Qwen3 MLX checkpoint
 
 ## [Add optional Apple Silicon Uzu inference support](uzu-support.md)
 
-- UZU-01: PLT-03; Apple Silicon Mac, usable Uzu-format checkpoint and upstream source/toolchain access
+- UZU-01: Usable Uzu-format checkpoint and upstream source/toolchain access; accepted MLX baseline is recorded in `docs/platform-support.md`
 - UZU-02: UZU-01 and its recorded immutable source/toolchain/checkpoint contract
 - UZU-03: UZU-02
 - UZU-04: UZU-03

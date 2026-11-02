@@ -1,7 +1,7 @@
 ---
 type: Plan
 title: Add optional Apple Silicon Uzu inference support
-description: An Apple Silicon user can opt into a native Uzu server through INDIGO's existing OpenAI-compatible router after the MLX path has passed runtime acceptance.
+description: An Apple Silicon user can opt into a native Uzu server through INDIGO's existing OpenAI-compatible router, measured against the accepted MLX baseline.
 difficulty: high
 impact: medium
 package: [indigo]
@@ -15,7 +15,7 @@ phase_budget_hours: 5
 
 ## Current evidence
 
-Reviewed 2026-11-01. INDIGO's default Linux image serves pinned llama.cpp through `llama-swap`; the opt-in Apple Silicon mode runs `mlx-lm` natively and peers it through the same router. The qualified Qwen3 4B checkpoint passes clean routed streaming and a structured tool-result round trip, while the incompatible GPT-OSS result remains recorded separately. The pinned local code-server overlay restores full ARM64 container health; PLT-03 in [platform-contract](platform-contract.md) remains the required client and restart/preservation acceptance gate. No Uzu code or checkpoint has been installed or benchmarked here.
+Reviewed 2026-11-01. INDIGO's default Linux image serves pinned llama.cpp through `llama-swap`; the opt-in Apple Silicon mode runs `mlx-lm` natively and peers it through the same router. The qualified Qwen3 4B checkpoint passes clean routed streaming, a structured tool-result round trip, default OpenCode selection, and restart preservation; [platform evidence](../docs/platform-support.md) records the accepted baseline while keeping the incompatible GPT-OSS result separate. The pinned local code-server overlay restores full ARM64 container health. No Uzu code or checkpoint has been installed or benchmarked here.
 
 Upstream [Uzu documentation](https://github.com/trymirai/uzu#server) describes an OpenAI-compatible server with `/v1/chat/completions` and `/v1/models`. Its [server source](https://github.com/trymirai/uzu/blob/main/crates/legacy/cli/src/server/chat_completions.rs) accepts streaming and tool calls, but serializes requests through one session. It uses [its own model format](https://github.com/trymirai/uzu#model-format); Metal and CPU are listed, while Linux/Windows targets are in progress. The current [model catalog](https://trymirai.com/models) reports speed on specific Apple hardware, not an INDIGO comparison. Its moving nightly toolchain and the README/package version mismatch make a tested source commit and toolchain pin necessary before packaging a host runner.
 
@@ -29,7 +29,7 @@ Upstream [Uzu documentation](https://github.com/trymirai/uzu#server) describes a
 
 ## Dependencies
 
-PLT-03 must have passed and its result must be recorded in `docs/platform-support.md` before any Uzu phase starts. UZU-01 also needs an Apple Silicon Mac, a usable Uzu-format checkpoint and source/toolchain access; downloads and machine availability are external waiting. Later phases depend on the qualified commit and API contract from UZU-01. Shared Makefile, image-template and runtime-docs locks serialize overlapping portfolio work but are not feature prerequisites.
+The accepted MLX client and restart baseline is recorded in `docs/platform-support.md`. UZU-01 still needs a usable Uzu-format checkpoint and upstream source/toolchain access; those downloads and assets are external waiting. Later phases depend on the qualified commit and API contract from UZU-01. Shared Makefile, image-template and runtime-docs locks serialize overlapping portfolio work but are not feature prerequisites.
 
 ## Acceptance criteria
 
@@ -48,7 +48,7 @@ Use the focused checks in each phase and only test-owned model/process/container
 
 - Status: blocked
 - Budget: 5 active hours maximum
-- Prerequisites: PLT-03; Apple Silicon Mac, usable Uzu-format checkpoint, and upstream source/toolchain access
+- Prerequisites: usable Uzu-format checkpoint and upstream source/toolchain access; accepted MLX baseline recorded in `docs/platform-support.md`
 - Exact write set: `scripts/uzu-acceptance.sh`, `docs/uzu-evaluation.md`
 - Primary integration lock: mac-inference-validation
 - Outcome: Identify an immutable Uzu commit, compatible Rust toolchain, checkpoint and actual HTTP behavior for an INDIGO host peer; document any incompatibility before integration begins.

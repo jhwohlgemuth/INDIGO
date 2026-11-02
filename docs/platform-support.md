@@ -3,9 +3,9 @@
 Indigo currently publishes one Linux image that installs a CUDA toolkit and builds a CUDA-capable `llama-server`.
 Disabling a runtime GPU reservation does not remove those image dependencies.
 The CI workflow builds a CPU validation image on an Ubuntu runner, checks Compose rendering on Windows, and includes a disposable startup smoke check. This checks startup without requiring a CUDA toolkit or GPU on the hosted runner; it does not validate the default CUDA image or serve a model.
-The Apple Silicon run below reached native MLX and the container router. A
-later image repair also restored full ARM64 container health; the remaining MLX
-acceptance work is client selection and restart/preservation evidence.
+The Apple Silicon runs below verify the complete native MLX, container-router,
+and OpenCode path. A later image repair also restored full ARM64 container
+health, and a full stop/restart preserved both router and client configuration.
 
 ## Evidence matrix
 
@@ -18,7 +18,7 @@ The table below separates the launch path each platform is *configured* to use f
 | Windows x86_64 with WSL2 and NVIDIA | Compose or standalone GPU launch | Compose rendering checked in CI; no recorded runtime result |
 | Windows x86_64 with WSL2, CPU only | `compose.cpu.yaml` or `make run GPU=0` | Compose rendering checked in CI; no recorded runtime result |
 | macOS Intel, Docker Linux VM | CPU launch without `--gpus all` | No recorded runtime result |
-| macOS Apple Silicon, Docker Linux VM | `make up-mlx MLX_MODEL=...`, ARM64 CPU INDIGO image and native host MLX | Clean routed streaming and a structured tool-result round trip passed with the qualified Qwen3 checkpoint; the pinned code-server overlay and full container runtime smoke passed on ARM64 on 2026-11-01 |
+| macOS Apple Silicon, Docker Linux VM | `make up-mlx MLX_MODEL=...`, ARM64 CPU INDIGO image and native host MLX | Clean routed streaming, a structured tool-result round trip, default OpenCode selection, and full stop/restart preservation passed with the qualified Qwen3 checkpoint; the pinned code-server overlay and full container runtime smoke also passed on ARM64 |
 | Linux with AMD GPU | CPU launch only | No accelerated backend packaged |
 
 ## CPU-only launch
@@ -54,7 +54,7 @@ Router liveness does not prove model serving: the Mac acceptance run must includ
 - Host and image: the same MacBook Pro M4 Max and `ghcr.io/jhwohlgemuth/indigo:0.1.4-mlx-arm64` described above. Native MLX ran in a test-owned launch agent on port 10735; an isolated `indigo-plt04` Compose project routed `mlx/default_model` through port 10732.
 - Checkpoint: `mlx-community/Qwen3-4B-Instruct-2507-4bit`, revision `50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b`; `model.safetensors` SHA-256 `2a73c6c248601ab904e035548abd8e6abb65ea27dcb5f342fb0a8910eb44173f`; tokenizer config SHA-256 `4397cc477eb6d79715ccd2000accd6b3531928f30029665832fa1b255f24d2b9`.
 - `python3 scripts/mlx-model-check.py` reported one complete 2,263,022,417-byte weight shard. Running `scripts/mlx-acceptance.py` directly against the native server and again through `llama-swap` produced a clean streamed `INDIGO_READY`, a structured `get_temperature({"city":"Boston"})` call with an ID, and a final response using the supplied `17` degree result. No channel markers or textual pseudo-calls appeared.
-- This closes the MLX server/checkpoint output-contract defect. With the later ARM64 code-server repair complete, PLT-03 still requires OpenCode selection, stop/restart, and preservation checks before the overall Apple Silicon path is accepted.
+- This closed the MLX server/checkpoint output-contract defect. The later ARM64 code-server repair and complete client/restart run below supplied the remaining acceptance evidence.
 
 ### ARM64 code-server repair, 2026-11-01
 
@@ -64,4 +64,11 @@ Router liveness does not prove model serving: the Mac acceptance run must includ
 - `/app/code-server/lib/node`, Argon2, node-pty, spdlog, Parcel watcher, and SQLite native modules all reported ELF machine `AArch64`; `code-server --version` reported 4.143.1 / Code 1.143.1.
 - `scripts/runtime-smoke.sh indigo:code-server-arm64` passed code-server, Verdaccio, Jupyter, Marimo, inference-router, Filesystem MCP, Rust Analyzer MCP, both MCP protocol probes, and graceful shutdown. The disposable container was removed.
 
-The MLX acceptance gate for optional Uzu work remains closed. Rerun the qualified Qwen3 contract through `make up-mlx`, then verify OpenCode selection, stop, restart, and preserved user configuration.
+### Complete client and restart run, 2026-11-01
+
+- Host: MacBook Pro Mac16,5, Apple M4 Max with 16 cores and 48 GB RAM, macOS 26.7.1. Docker Desktop used a Linux ARM64 engine. The final locally built image was `ghcr.io/jhwohlgemuth/indigo:0.1.4-mlx-arm64`, image ID `sha256:c5f0ac6229bd916dfdeaa4c4c49253e7a2129196cac871caf424401b8a97bf15`, built from the current repository and the pinned Notebook and code-server inputs above.
+- Native server and model: `mlx-lm==0.32.2`; `mlx-community/Qwen3-4B-Instruct-2507-4bit` revision `50d427756c6b1b2fe0c0a10f67fbda1fc8e82c1b`; `model.safetensors` SHA-256 `2a73c6c248601ab904e035548abd8e6abb65ea27dcb5f342fb0a8910eb44173f`. The local `config.json` and `tokenizer.json` hashes were `574349e5a343236546fda55e4744a76e181f534182d7dc60ff1bad7e7a502849` and `aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4`.
+- Isolation: the run used Compose project `indigo-plt03`, native port 10733, project-owned named volumes, and router state under `.indigo/plt03/llama-swap`. Starting with `make up-mlx` made native `/health` ready and exposed the router on 10732. `python3 scripts/mlx-acceptance.py` passed routed model discovery, streamed `INDIGO_READY`, the structured `get_temperature({"city":"Boston"})` call, and the final response using the supplied `17` degree result.
+- OpenCode 2.1.3 loaded the persisted default `indigo/mlx/default_model`. Running `opencode run --format json` without `--model` returned `OPENCODE_MLX_READY`, proving client selection through the configured default rather than a command-line override.
+- Before shutdown, SHA-256 was `649748bb29bc0566e33d360fef1edb2268be137dac8d9f7ad3bb62d96f2965d6` for `/home/nonroot/.config/opencode/opencode.json` and `0d6269cc535bedfeb3afff7cd7047ed73c18cf73702cf7a7bc5fac15274ea260` for `/home/nonroot/.config/llama-swap/config.yaml`. `make down-mlx` removed the container/network and stopped `org.indigo.mlx.indigo-plt03`; `make up-mlx` rebuilt and recreated the stack. Both hashes were identical after restart.
+- After restart, `python3 scripts/mlx-acceptance.py` passed the complete routed protocol suite again, and default-model `opencode run --format json` returned `OPENCODE_MLX_RESTART_READY`. This closes the Apple Silicon MLX acceptance gate. It establishes the baseline required for optional Uzu evaluation; it does not itself validate Uzu.
