@@ -1,5 +1,7 @@
 # Isolated Native Development Instance for Generative Operations (INDIGO)
 
+[![Packaged with KitOps](https://img.shields.io/badge/Packaged%20with-KitOps-FFAF52?labelColor=363636)](https://kitops.org)
+
 > A local workshop for agentic software development — local-first, agent native
 
 INDIGO combines a local OpenAI-compatible model router, OpenCode, notebook
